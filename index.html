@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SoftApp</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
+    <link rel="stylesheet" href="style.css">
+    
+    <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js" defer></script>
+    <script src="app.js" defer></script>
+</head>
+<body>
+
+<div id="app">
+    <header class="masthead">
+        <div class="stamp-badge"><i class="ph ph-shield-check"></i></div>
+        <div>
+            <h1>SoftApp</h1>
+            <p class="subtitle">Manajemen Data Siswa, Kartu QR, dan Pelaporan</p>
+        </div>
+    </header>
+
+    <nav class="tabs">
+        <button class="tab active" data-tab="siswa"><i class="ph ph-users"></i> Data Siswa</button>
+        <button class="tab" data-tab="kartu"><i class="ph ph-identification-card"></i> Kartu QR</button>
+        <button class="tab" data-tab="absensi"><i class="ph ph-scan"></i> Absensi & Laporan</button>
+    </nav>
+
+    <main>
+        <!-- TAB: DATA SISWA -->
+        <section id="tab-siswa" class="tab-panel active">
+            <div class="panel-header">
+                <div>
+                    <h2 class="panel-title">Master Data Siswa</h2>
+                    <p class="panel-hint">Tambah manual atau impor massal dari file CSV.</p>
+                </div>
+                <div class="header-actions">
+                    <input type="file" id="file-import" accept=".csv" style="display:none;">
+                    <button class="btn secondary" id="btn-import-csv"><i class="ph ph-upload-simple"></i> Impor CSV</button>
+                    <button class="btn danger" id="btn-hapus-semua"><i class="ph ph-trash"></i> Hapus Semua</button>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="field">
+                    <label>NIS / No. Induk</label>
+                    <input type="text" id="input-nis" placeholder="Contoh: 10101">
+                </div>
+                <div class="field" style="flex: 2;">
+                    <label>Nama Lengkap Siswa</label>
+                    <input type="text" id="input-nama" placeholder="Contoh: Budi Santoso">
+                </div>
+                <div class="field">
+                    <label>Kelas</label>
+                    <input type="text" id="input-kelas" placeholder="Contoh: 6A">
+                </div>
+                <button class="btn" id="btn-tambah-siswa"><i class="ph ph-plus"></i> Tambah</button>
+            </div>
+
+            <div id="siswa-table-wrap"></div>
+        </section>
+
+        <!-- TAB: KARTU QR -->
+        <section id="tab-kartu" class="tab-panel">
+            <div class="panel-header">
+                <div>
+                    <h2 class="panel-title">Cetak Kartu Identitas</h2>
+                    <p class="panel-hint">Gunakan kertas A4 untuk hasil cetak yang optimal.</p>
+                </div>
+                <button class="btn" id="btn-print-kartu"><i class="ph ph-printer"></i> Cetak Kartu (Ctrl+P)</button>
+            </div>
+            <div id="cards-grid-wrap" class="cards-grid"></div>
+        </section>
+
+        <!-- TAB: ABSENSI -->
+        <section id="tab-absensi" class="tab-panel">
+            <div class="panel-header">
+                <div>
+                    <h2 class="panel-title">Monitor Absensi</h2>
+                    <div class="field" style="margin-top: 10px; flex-direction: row; align-items: center; gap: 10px;">
+                        <label style="margin:0;">Pilih Tanggal:</label>
+                        <input type="date" id="input-tanggal-absensi">
+                    </div>
+                </div>
+                <button class="btn secondary" id="btn-export-csv"><i class="ph ph-download-simple"></i> Ekspor Excel (CSV)</button>
+            </div>
+
+            <!-- Dashboard Statistik -->
+            <div class="stats-grid" id="stats-dashboard">
+                <div class="stat-card"><h3>0</h3><p>Total Siswa</p></div>
+                <div class="stat-card text-success"><h3>0</h3><p>Hadir</p></div>
+                <div class="stat-card text-warning"><h3>0</h3><p>Sakit/Izin</p></div>
+                <div class="stat-card text-danger"><h3>0</h3><p>Belum Absen</p></div>
+            </div>
+
+            <div class="scan-layout">
+                <div class="scanner-container">
+                    <div class="scanner-box" id="scanner-box">
+                        <div class="scanner-placeholder" id="scanner-placeholder">
+                            <i class="ph ph-camera-slash" style="font-size: 40px; margin-bottom: 10px;"></i><br>
+                            Kamera tidak aktif
+                        </div>
+                        <video id="scanner-video" playsinline muted></video>
+                    </div>
+                    <canvas id="scan-canvas" style="display:none;"></canvas>
+                    <div class="scanner-controls">
+                        <button class="btn" id="btn-start-scan"><i class="ph ph-play"></i> Mulai Scan</button>
+                        <button class="btn secondary" id="btn-stop-scan" disabled><i class="ph ph-stop"></i> Berhenti</button>
+                    </div>
+
+                    <!-- Input Manual -->
+                    <div class="manual-entry">
+                        <h3>Tandai Manual</h3>
+                        <div class="form-row" style="margin-bottom:0; padding:10px;">
+                            <div class="field" style="flex:2;">
+                                <select id="manual-select-siswa"><option value="">Pilih Siswa...</option></select>
+                            </div>
+                            <div class="field">
+                                <select id="manual-select-status">
+                                    <option value="Hadir">Hadir</option>
+                                    <option value="Sakit">Sakit</option>
+                                    <option value="Izin">Izin</option>
+                                    <option value="Alpa">Alpa</option>
+                                </select>
+                            </div>
+                            <button class="btn" id="btn-manual-simpan">Simpan</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Daftar Kehadiran & Belum Hadir -->
+                <div class="attendance-container">
+                    <div class="att-header">
+                        <h3>Daftar Harian</h3>
+                        <div class="att-toggles">
+                            <button class="att-btn active" id="show-sudah">Sudah Absen (<span id="count-sudah">0</span>)</button>
+                            <button class="att-btn" id="show-belum">Belum Absen (<span id="count-belum">0</span>)</button>
+                        </div>
+                    </div>
+                    <div id="attendance-table-wrap"></div>
+                    <div id="belum-table-wrap" style="display: none;"></div>
+                </div>
+            </div>
+        </section>
+    </main>
+</div>
+
+<div id="toast"></div>
+
+</body>
+</html>
