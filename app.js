@@ -5,7 +5,7 @@ let videoStream = null;
 let scanInterval = null;
 
 // MASUKKAN URL GOOGLE APPS SCRIPT ANDA DI SINI
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby-GIPBRI-1jFjnc3SZ2B5ewD_i0oO-gPpY1pn6bdqzDhNu4gJd7g36x3NpSUX9pWLSIw/exec';
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwT5NHezF5f9v0eXVpSRAN2X241vcIuCq1tqZCoycqEvQm-MrWQBBzcGlv7O54PUrI2lw/exec';
 
 const beepSound = new Audio('data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU'+Array(100).join('123'));
 
@@ -19,26 +19,30 @@ const wrapSudah = document.getElementById('attendance-table-wrap');
 const wrapBelum = document.getElementById('belum-table-wrap');
 
 // --- INISIALISASI ---
-// --- INISIALISASI ---
 document.addEventListener('DOMContentLoaded', () => {
     dateInput.valueAsDate = new Date();
     updateUI();
     
-    // --- FITUR BARU: AUTO-SINKRONISASI DARI CLOUD ---
+    // Tarik Siswa DAN Absensi Harian dari Google Sheets
     if (GOOGLE_SCRIPT_URL) {
-        showToast('Memuat data dari Cloud...', 'success');
+        showToast('Sinkronisasi Cloud berjalan...', 'success');
         fetch(GOOGLE_SCRIPT_URL)
             .then(response => response.json())
             .then(dataCloud => {
-                if(dataCloud && dataCloud.length > 0) {
-                    dataSiswa = dataCloud; // Timpa data lokal dengan data Cloud
-                    simpanData();
-                    updateUI();
-                    showToast('Data berhasil disinkronisasi!', 'success');
+                if(dataCloud) {
+                    if (dataCloud.siswa && dataCloud.siswa.length > 0) {
+                        dataSiswa = dataCloud.siswa;
+                    }
+                    if (dataCloud.absensi && Object.keys(dataCloud.absensi).length > 0) {
+                        dataAbsen = dataCloud.absensi;
+                    }
+                    simpanData(); // Simpan ke localStorage sebagai backup offline
+                    updateUI();   // Refresh tampilan tabel
+                    showToast('Data tersinkronisasi 100%!', 'success');
                 }
             })
             .catch(error => {
-                showToast('Mode Offline: Menggunakan data lokal.', 'warning');
+                showToast('Koneksi lambat/offline. Menggunakan data lokal.', 'warning');
             });
     }
 });
@@ -61,15 +65,19 @@ document.getElementById('btn-tambah-siswa').addEventListener('click', () => {
     document.getElementById('input-kelas').value = '';
     showToast('Siswa berhasil ditambahkan.', 'success');
 
-    // --- FITUR BARU: KIRIM SISWA BARU KE CLOUD ---
+    // --- FITUR BARU: KIRIM KE GOOGLE SPREADSHEET (BACKGROUND) ---
     if (GOOGLE_SCRIPT_URL) {
         const formData = new URLSearchParams();
-        formData.append('aksi', 'tambah_siswa');
-        formData.append('nis', nis);
-        formData.append('nama', nama);
-        formData.append('kelas', kelas);
-        
-        fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: formData }).catch(e => console.log('Gagal backup ke cloud.'));
+        formData.append('aksi', 'absen');
+        formData.append('tanggal', tgl);
+        formData.append('waktu', waktuSekarang); // Pastikan ini ada
+        formData.append('nis', siswa.nis);
+        formData.append('nama', siswa.nama);
+        formData.append('kelas', siswa.kelas);
+        formData.append('status', status);
+
+        fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: formData })
+          .catch(error => console.error('Gagal kirim ke Sheet'));
     }
 });
 
