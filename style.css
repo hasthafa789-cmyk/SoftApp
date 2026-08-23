@@ -488,3 +488,42 @@ body.dark-theme .stat-card:hover, body.dark-theme .qr-card:hover {
         border-top: 1px solid rgba(255, 255, 255, 0.05) !important;
     }
 }
+
+/* =========================================================
+   PENGUNCI LAYAR HP (ANTI-GESER KANAN / OVERFLOW FIX)
+   ========================================================= */
+
+/* 1. Kunci fondasi utama agar tidak bisa digeser ke samping */
+html, body {
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+    width: 100% !important;
+    margin: 0;
+    padding: 0;
+    position: relative; /* Menahan elemen yang melayang */
+}
+
+/* 2. Pastikan kontainer aplikasi tidak menembus layar */
+#app {
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+}
+
+/* 3. Mencegah grafik (Chart.js) memaksa layar melebar */
+.chart-container {
+    max-width: 100%;
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+/* 4. Pastikan form dan input tidak melebihi lebar layar */
+.form-row, input, select {
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+/* 5. Perbaikan untuk elemen di dalam tab-panel di HP */
+.tab-panel {
+    max-width: 100vw;
+    overflow-x: hidden;
+}
