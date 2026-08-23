@@ -36,6 +36,17 @@
 </head>
 <body>
 
+<!-- LAYAR LOGIN MULTI-ROLE -->
+<div id="login-screen" class="login-screen">
+    <div class="qr-card" style="width: 90%; max-width: 400px; padding: 40px 30px; text-align: center; z-index: 10001;">
+        <div class="stamp-badge" style="margin: 0 auto 20px auto;"><img src="icon-192.png" class="app-logo"></div>
+        <h2 style="margin-bottom: 5px; color: var(--text-main);">SoftApp Ultimate</h2>
+        <p style="color:var(--text-muted); margin-bottom: 25px; font-size: 14px;">Masuk ke Ruang Kerja Anda</p>
+        <input type="password" id="login-pin" placeholder="PIN AKSES" style="width:100%; text-align:center; letter-spacing: 5px; font-size: 18px; font-weight:bold; margin-bottom: 20px; background: var(--bg-main);">
+        <button class="btn" id="btn-login" style="width:100%; justify-content:center;">Verifikasi</button>
+    </div>
+</div>
+
 <div id="loading-overlay" class="loading-overlay">
     <div class="spinner"></div>
     <p>Memproses Data...</p>
@@ -129,20 +140,14 @@
 
         <!-- TAB: ABSENSI -->
         <section id="tab-absensi" class="tab-panel">
-            <div class="panel-header">
-                <div>
-                    <h2 class="panel-title">Monitor Absensi</h2>
-                    <div class="field" style="margin-top: 10px; flex-direction: row; align-items: center; gap: 10px;">
-                        <label for="input-tanggal-absensi" style="margin:0;">Pilih Tanggal:</label>
-                        <input type="date" id="input-tanggal-absensi">
-                    </div>
-                </div>
-                <div class="header-actions">
-                    <button class="btn warning" id="btn-export-pdf"><i class="ph ph-file-pdf"></i> Ekspor PDF</button>
-                    <!-- BARU: Tombol Export Excel -->
-                    <button class="btn" id="btn-export-excel"><i class="ph ph-file-xls"></i> Ekspor Excel</button>
-                </div>
-            </div>
+            <div class="field" style="margin-top: 10px; flex-direction: row; align-items: center; gap: 10px; flex-wrap: wrap;">
+    <label for="input-tanggal-absensi" style="margin:0;">Pilih Tanggal:</label>
+    <input type="date" id="input-tanggal-absensi">
+    
+    <!-- BARU: Pengaturan Jam Otomatis Terlambat -->
+    <label for="input-batas-jam" style="margin:0; margin-left: 10px;">Batas Terlambat:</label>
+    <input type="time" id="input-batas-jam" value="12:00">
+</div>
 
             <div class="stats-grid" id="stats-dashboard">
                 <div class="stat-card"><h3>0</h3><p>Total Siswa</p></div>

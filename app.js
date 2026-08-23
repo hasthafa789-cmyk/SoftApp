@@ -42,8 +42,41 @@ let myChart = null;
 let sortCol = 'nama'; let sortAsc = true; 
 let availableCameras = [];
 
+// ==========================================
+// SISTEM LOGIN & MULTI-ROLE
+// ==========================================
+let currentRole = null;
+document.getElementById('btn-login')?.addEventListener('click', () => {
+    const pin = document.getElementById('login-pin').value;
+    const loginScreen = document.getElementById('login-screen');
+    
+    if (pin === '0895') {
+        currentRole = 'admin'; // Admin: Bisa akses semua
+        loginScreen.style.opacity = '0';
+        setTimeout(() => loginScreen.style.display = 'none', 500);
+        showToast('Selamat Datang, Admin!', 'success');
+    } 
+    else if (pin === '0000') {
+        currentRole = 'guru'; // Guru: Dibatasi!
+        loginScreen.style.opacity = '0';
+        setTimeout(() => loginScreen.style.display = 'none', 500);
+        
+        // Sembunyikan tab Edit Data Siswa & Cetak Kartu QR
+        document.querySelector('[data-tab="siswa"]').style.display = 'none';
+        document.querySelector('[data-tab="kartu"]').style.display = 'none';
+        
+        // Pindah paksa ke tab Absensi
+        document.querySelector('[data-tab="absensi"]').click();
+        showToast('Akses Guru: Edit Data Dikunci', 'info');
+    } 
+    else {
+        playBeep(true);
+        showToast('PIN Akses Salah!', 'error');
+    }
+});
+
 // MASUKKAN URL GOOGLE APPS SCRIPT ANDA DI SINI
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxBrLwpbDpST9KpTyM2CEKbbkyjKtexA6bd7DjSPpt2LVjmimNkhigxNKrvD_otZtLscQ/exec';
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwHjKdzKqzvGEEBTYcSxH-ooSnsiucPLSfK2ex8RiXliTtb8v_CUSw4uWxzGr6I8NgpcA/exec';
 
 // ==========================================
 // SWEETALERT2 & UTILS PENDUKUNG
@@ -390,17 +423,26 @@ async function catatAbsen(nis, status, isManual = false) {
     const tgl = dateInput?.value || new Date().toISOString().split('T')[0];
     if (!isManual && dataAbsen[tgl]) {
         const riwayat = dataAbsen[tgl].find(a => a.nis === nis);
-        if (riwayat && riwayat.status === 'Hadir') { playBeep(true); showToast(`${siswa.nama} sudah absen!`, 'info'); return; }
+        if (riwayat && (riwayat.status === 'Hadir' || riwayat.status === 'Terlambat')) { playBeep(true); showToast(`${siswa.nama} sudah absen!`, 'info'); return; }
     }
 
-    const waktuSekarang = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+    // Gunakan format standar Internasional (HH:mm) agar valid di semua HP
+    const waktuSekarang = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    const batasJam = document.getElementById('input-batas-jam')?.value || '07:15';
+    
+    // KECERDASAN BUATAN: Auto-Deteksi Terlambat
+    let finalStatus = status;
+    if (status === 'Hadir' && waktuSekarang > batasJam) {
+        finalStatus = 'Terlambat';
+    }
+
     if (!dataAbsen[tgl]) dataAbsen[tgl] = []; dataAbsen[tgl] = dataAbsen[tgl].filter(a => a.nis !== nis);
-    dataAbsen[tgl].push({ nis: siswa.nis, nama: siswa.nama, kelas: siswa.kelas, waktu: waktuSekarang, status: status });
+    dataAbsen[tgl].push({ nis: siswa.nis, nama: siswa.nama, kelas: siswa.kelas, waktu: waktuSekarang, status: finalStatus });
     
     simpanData(); renderAbsensi(); if(selectSiswaManual) selectSiswaManual.value = '';
-    if (!isManual) playBeep(false); showToast(`${siswa.nama} ditandai: ${status}`, 'success');
+    if (!isManual) playBeep(false); showToast(`${siswa.nama} ditandai: ${finalStatus}`, finalStatus === 'Terlambat' ? 'warning' : 'success');
 
-    let formData = new URLSearchParams({ aksi: 'absen', tanggal: tgl, waktu: waktuSekarang, nis: siswa.nis, nama: siswa.nama, kelas: siswa.kelas, status: status });
+    let formData = new URLSearchParams({ aksi: 'absen', tanggal: tgl, waktu: waktuSekarang, nis: siswa.nis, nama: siswa.nama, kelas: siswa.kelas, status: finalStatus });
     fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: formData }).catch(e => console.log('Sinkronisasi offline'));
 }
 
@@ -422,8 +464,24 @@ function renderAbsensi() {
     const sudahAbsenNIS = absenHariIni.map(a => a.nis);
     const siswaBelumAbsen = dataSiswa.filter(s => !sudahAbsenNIS.includes(s.nis));
     
-    let htmlBelum = `<table><tr><th>NIS</th><th>Nama Lengkap</th><th>Kelas</th></tr>`;
-    siswaBelumAbsen.forEach(s => { htmlBelum += `<tr><td>${s.nis}</td><td><strong>${s.nama}</strong></td><td>${s.kelas}</td></tr>`; });
+    // TABEL BELUM ABSEN (DENGAN FITUR BULK ACTION / AKSI MASSAL)
+    let htmlBelum = `
+    <div id="bulk-panel" style="display:none; padding:15px; background:var(--bg-card); border-radius:8px; border:1px solid var(--border); margin-bottom:15px; gap:10px; align-items:center; flex-wrap:wrap;">
+        <span style="font-size:13px; font-weight:600;">Tandai Massal:</span>
+        <button class="btn warning" style="padding:6px 12px; font-size:12px;" onclick="prosesBulk('Hadir')">Hadir</button>
+        <button class="btn warning" style="padding:6px 12px; font-size:12px;" onclick="prosesBulk('Sakit')">Sakit</button>
+        <button class="btn warning" style="padding:6px 12px; font-size:12px;" onclick="prosesBulk('Izin')">Izin</button>
+        <button class="btn warning" style="padding:6px 12px; font-size:12px;" onclick="prosesBulk('Alpa')">Alpa</button>
+    </div>
+    <table><tr><th style="width:40px;"><input type="checkbox" id="check-all" onchange="toggleSemua(this)"></th><th>NIS</th><th>Nama Lengkap</th><th>Kelas</th></tr>`;
+    
+    siswaBelumAbsen.forEach(s => { 
+        htmlBelum += `<tr>
+            <td><input type="checkbox" class="check-siswa" value="${s.nis}" onchange="cekBulkAction()"></td>
+            <td>${s.nis}</td><td><strong>${s.nama}</strong></td><td>${s.kelas}</td>
+        </tr>`; 
+    });
+    
     const wrapBelum = document.getElementById('belum-table-wrap');
     if(wrapBelum) wrapBelum.innerHTML = siswaBelumAbsen.length === 0 ? '<div class="empty-state">Semua siswa sudah diabsen.</div>' : htmlBelum + '</table>';
 
@@ -661,4 +719,60 @@ document.getElementById('file-import')?.addEventListener('change', (e) => {
         setLoading(false); simpanData(); updateUI(); showToast(`Berhasil mengimpor ${count} siswa.`, 'success'); e.target.value = '';
     };
     reader.readAsText(file);
+});
+
+// ==========================================
+// FUNGSI AKSI MASSAL (BULK ACTIONS)
+// ==========================================
+window.toggleSemua = function(source) {
+    const checkboxes = document.querySelectorAll('.check-siswa');
+    checkboxes.forEach(cb => cb.checked = source.checked);
+    cekBulkAction();
+}
+
+window.cekBulkAction = function() {
+    const adaYangDicentang = document.querySelectorAll('.check-siswa:checked').length > 0;
+    document.getElementById('bulk-panel').style.display = adaYangDicentang ? 'flex' : 'none';
+}
+
+window.prosesBulk = function(statusTarget) {
+    const checked = document.querySelectorAll('.check-siswa:checked');
+    if(checked.length === 0) return;
+    
+    Swal.fire({
+        title: 'Absensi Massal', text: `Anda akan menandai ${checked.length} siswa sebagai ${statusTarget}?`,
+        icon: 'question', showCancelButton: true, confirmButtonText: 'Ya, Tandai!',
+        confirmButtonColor: '#171717', cancelButtonColor: '#737373'
+    }).then(async (result) => {
+        if (result.isConfirmed) {
+            setLoading(true);
+            // Eksekusi absen berurutan dengan cepat
+            for(let cb of checked) { await catatAbsen(cb.value, statusTarget, true); }
+            setLoading(false);
+            showToast(`${checked.length} siswa berhasil ditandai!`, 'success');
+        }
+    });
+}
+
+// ==========================================
+// SHORTCUT KEYBOARD (ENTER UNTUK EKSEKUSI)
+// ==========================================
+
+// 1. Tekan Enter untuk Login
+document.getElementById('login-pin')?.addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault(); // Mencegah browser me-reload halaman
+        document.getElementById('btn-login')?.click(); // Menekan tombol login secara gaib
+    }
+});
+
+// 2. Tekan Enter untuk Menyimpan Data Siswa
+const formSiswaInputs = ['input-nis', 'input-nama', 'input-kelas'];
+formSiswaInputs.forEach(id => {
+    document.getElementById(id)?.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            document.getElementById('btn-tambah-siswa')?.click(); // Menekan tombol simpan secara gaib
+        }
+    });
 });
