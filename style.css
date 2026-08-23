@@ -396,3 +396,95 @@ body { overscroll-behavior-y: contain; } /* Cegah efek pull-to-refresh */
     .qr-card p { font-size: 12px !important; color: #333 !important; margin-bottom: 0 !important; }
     .qr-code { border: none !important; padding: 0 !important; display: flex !important; justify-content: center !important; align-items: center !important; box-shadow: none !important; }
 }
+
+/* =========================================================
+   PENGALAMAN UI/UX PREMIUM (ENTERPRISE POLISH)
+   ========================================================= */
+
+/* 1. TYPOGRAPHY & SMOOTHING TINGKAT TINGGI */
+body {
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* 2. EFEK KACA EMBUN (GLASSMORPHISM) & STICKY HEADER */
+.masthead {
+    position: sticky;
+    top: 0;
+    z-index: 8000;
+    background: rgba(252, 252, 252, 0.75) !important;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
+    transition: background 0.3s ease, border-color 0.3s ease;
+}
+
+/* Glassmorphism khusus untuk Mode Gelap */
+body.dark-theme .masthead {
+    background: rgba(10, 10, 10, 0.75) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+
+/* 3. MAC-STYLE CUSTOM SCROLLBAR (Elegan & Tipis) */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted);
+}
+/* Menghapus sudut putih pada pertemuan scrollbar vertikal & horizontal */
+::-webkit-scrollbar-corner {
+    background: transparent;
+}
+
+/* 4. ANIMASI SINEMATIK SAAT PINDAH TAB (FADE & SCALE) */
+@keyframes cinematicSlideUp {
+    0% { opacity: 0; transform: translateY(15px) scale(0.99); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+.tab-panel.active {
+    display: block;
+    animation: cinematicSlideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* 5. MICRO-INTERACTIONS (Interaksi Hover yang Empuk) */
+.btn {
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.btn:active {
+    transform: scale(0.96) !important; /* Efek ditekan ke dalam */
+}
+
+.stat-card, .qr-card {
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s ease;
+}
+.stat-card:hover, .qr-card:hover {
+    transform: translateY(-5px) scale(1.01);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.02);
+}
+body.dark-theme .stat-card:hover, body.dark-theme .qr-card:hover {
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4);
+}
+
+/* 6. PERBAIKAN GLASSMORPHISM UNTUK BOTTOM NAV (HP) */
+@media (max-width: 768px) {
+    .tabs {
+        background: rgba(255, 255, 255, 0.85) !important;
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-top: 1px solid rgba(0, 0, 0, 0.05) !important;
+    }
+    body.dark-theme .tabs {
+        background: rgba(23, 23, 23, 0.85) !important;
+        border-top: 1px solid rgba(255, 255, 255, 0.05) !important;
+    }
+}
