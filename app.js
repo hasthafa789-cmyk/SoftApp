@@ -40,34 +40,44 @@ const itemsPerPage = 10;
 let searchTimeout;
 let myChart = null; 
 let sortCol = 'nama'; let sortAsc = true; 
+const filterKelasInput = document.getElementById('filter-kelas');
 let availableCameras = [];
 
 // ==========================================
 // SISTEM LOGIN & MULTI-ROLE
 // ==========================================
 let currentRole = null;
+
+// Fungsi Sapaan Berdasarkan Waktu
+function dapatkanSapaan() {
+    const jam = new Date().getHours();
+    if (jam >= 4 && jam < 11) return "Selamat Pagi";
+    if (jam >= 11 && jam < 15) return "Selamat Siang";
+    if (jam >= 15 && jam < 18) return "Selamat Sore";
+    return "Selamat Malam";
+}
+
 document.getElementById('btn-login')?.addEventListener('click', () => {
     const pin = document.getElementById('login-pin').value;
     const loginScreen = document.getElementById('login-screen');
+    const sapaan = dapatkanSapaan(); // Memanggil sapaan waktu
     
     if (pin === '0895') {
-        currentRole = 'admin'; // Admin: Bisa akses semua
+        currentRole = 'admin';
         loginScreen.style.opacity = '0';
         setTimeout(() => loginScreen.style.display = 'none', 500);
-        showToast('Selamat Datang, Admin!', 'success');
+        showToast(`${sapaan}, Admin!`, 'success');
     } 
     else if (pin === '0000') {
-        currentRole = 'guru'; // Guru: Dibatasi!
+        currentRole = 'guru';
         loginScreen.style.opacity = '0';
         setTimeout(() => loginScreen.style.display = 'none', 500);
         
-        // Sembunyikan tab Edit Data Siswa & Cetak Kartu QR
         document.querySelector('[data-tab="siswa"]').style.display = 'none';
         document.querySelector('[data-tab="kartu"]').style.display = 'none';
         
-        // Pindah paksa ke tab Absensi
         document.querySelector('[data-tab="absensi"]').click();
-        showToast('Akses Guru: Edit Data Dikunci', 'info');
+        showToast(`${sapaan}, Guru! Akses Terbatas.`, 'info');
     } 
     else {
         playBeep(true);
@@ -184,7 +194,36 @@ async function syncDataLokalDenganCloud() {
     finally { setLoading(false); }
 }
 
-function updateUI() { if (searchInput) renderTableSiswa(searchInput.value); renderKartu(); renderAbsensi(); updateSelectManual(); }
+function updateUI() { 
+    updateDropdownKelas(); // Update daftar kelas di dropdown
+    if (searchInput) renderTableSiswa(searchInput.value); 
+    renderKartu(); 
+    renderAbsensi(); 
+    updateSelectManual(); 
+}
+function updateDropdownKelas() {
+    if (!filterKelasInput) return;
+
+    // Ambil kelas yang sedang dipilih saat ini (agar tidak reset saat tabel merender ulang)
+    const selectedValue = filterKelasInput.value;
+
+    // Ambil semua daftar kelas unik dari data siswa
+    const daftarKelasUnik = [...new Set(dataSiswa.map(s => s.kelas))].sort();
+
+    // Render ulang opsi dropdown
+    let htmlOptions = '<option value="">Semua Kelas</option>';
+    daftarKelasUnik.forEach(kelas => {
+        htmlOptions += `<option value="${kelas}">${kelas}</option>`;
+    });
+
+    filterKelasInput.innerHTML = htmlOptions;
+
+    // Kembalikan nilai yang dipilih sebelumnya (jika masih ada)
+    if (daftarKelasUnik.includes(selectedValue)) {
+        filterKelasInput.value = selectedValue;
+    }
+}
+
 function simpanData() { localStorage.setItem('siswa_pro', JSON.stringify(dataSiswa)); localStorage.setItem('absensi_pro', JSON.stringify(dataAbsen)); }
 
 // ==========================================
@@ -265,13 +304,26 @@ document.getElementById('btn-hapus-semua')?.addEventListener('click', () => {
 searchInput?.addEventListener('input', (e) => { clearTimeout(searchTimeout); searchTimeout = setTimeout(() => { currentPage = 1; renderTableSiswa(e.target.value); }, 300); });
 window.handleSort = function(column) { if (sortCol === column) sortAsc = !sortAsc; else { sortCol = column; sortAsc = true; } renderTableSiswa(searchInput?.value || ''); }
 
+filterKelasInput?.addEventListener('change', () => { 
+    currentPage = 1; // Kembali ke halaman 1 saat filter diganti
+    renderTableSiswa(searchInput?.value || ''); 
+});
+
 function renderTableSiswa(filter = '') {
     const wrap = document.getElementById('siswa-table-wrap'); const pageControls = document.getElementById('pagination-controls');
     if (!wrap) return;
     if (dataSiswa.length === 0) { wrap.innerHTML = '<div class="empty-state"><i class="ph ph-users" style="font-size:40px;"></i><br>Belum ada data.</div>'; if (pageControls) pageControls.innerHTML = ''; return; }
 
-    const keyword = filter.toLowerCase();
-    let filteredSiswa = dataSiswa.filter(s => s.nama.toLowerCase().includes(keyword) || s.nis.toLowerCase().includes(keyword));
+    // (Ganti bagian let filteredSiswa lama dengan yang ini)
+const keyword = filter.toLowerCase();
+const filterKelasValue = filterKelasInput?.value || '';
+
+// Filter GANDA: Berdasarkan Nama/NIS (Pencarian) DAN Berdasarkan Kelas (Dropdown)
+let filteredSiswa = dataSiswa.filter(s => {
+    const cocokKataKunci = s.nama.toLowerCase().includes(keyword) || s.nis.toLowerCase().includes(keyword);
+    const cocokKelas = filterKelasValue === '' ? true : (s.kelas === filterKelasValue);
+    return cocokKataKunci && cocokKelas;
+});
 
     filteredSiswa.sort((a, b) => {
         let valA = a[sortCol].toLowerCase(); let valB = b[sortCol].toLowerCase();

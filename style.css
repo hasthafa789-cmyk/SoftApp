@@ -552,3 +552,40 @@ input[type="checkbox"] {
     width: 18px; height: 18px; cursor: pointer;
     accent-color: var(--primary);
 }
+
+/* =========================================================
+   PERBAIKAN POP-UP SWEETALERT (TEMA MONOKROM & Z-INDEX)
+   ========================================================= */
+
+/* 1. Paksa Pop-up selalu tampil paling depan (Bahkan menembus Layar Login) */
+.swal2-container {
+    z-index: 99999 !important;
+}
+
+/* 2. Sesuaikan Background, Teks, & Border Pop-up dengan Tema (Gelap/Terang) */
+.swal2-popup, .swal2-toast {
+    background-color: var(--bg-card) !important;
+    color: var(--text-main) !important;
+    border: 1px solid var(--border) !important;
+    box-shadow: var(--shadow-lg) !important;
+}
+
+/* 3. Warnai Teks Judul & Deskripsi sesuai tema */
+.swal2-title, .swal2-html-container {
+    color: var(--text-main) !important;
+}
+
+/* 4. Desain Kolom Input PIN di dalam Pop-up agar elegan */
+.swal2-input {
+    background-color: var(--bg-main) !important;
+    color: var(--text-main) !important;
+    border: 1px solid var(--border) !important;
+}
+.swal2-input:focus {
+    border-color: var(--text-muted) !important;
+    box-shadow: 0 0 0 2px var(--border) !important;
+}
+
+/* 5. Khusus untuk Ikon Sukses/Gagal agar lebih membaur */
+.swal2-icon.swal2-success [class^="swal2-success-line"] { background-color: var(--text-main) !important; }
+.swal2-icon.swal2-success .swal2-success-ring { border-color: var(--border) !important; }

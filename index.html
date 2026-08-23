@@ -70,7 +70,7 @@
         
         <div style="display: flex; gap: 10px; margin-left: auto;">
             <!-- Tombol Install PWA -->
-            <button id="btn-install-pwa" class="btn" style="display: none;"><i class="ph ph-download-simple"></i> Install App</button>
+            <button id="btn-install-pwa" class="btn" style="display: none;"><i class="ph ph-download-simple"></i> Install</button>
             
             <!-- Tombol Tema -->
             <button id="btn-theme-toggle" class="btn secondary" style="border-radius: 50%; padding: 12px; display: flex; align-items: center; justify-content: center;" title="Ganti Tema">
@@ -79,6 +79,7 @@
         </div>
     </header>
 
+    <!-- TOMBOL NAVIGASI YANG SEMPAT HILANG -->
     <nav class="tabs">
         <button class="tab active" data-tab="siswa"><i class="ph ph-users"></i> Data Siswa</button>
         <button class="tab" data-tab="kartu"><i class="ph ph-identification-card"></i> Kartu QR</button>
@@ -117,9 +118,18 @@
                 <button class="btn secondary" id="btn-batal-edit" style="display: none;"><i class="ph ph-x"></i> Batal</button>
             </div>
 
-            <div class="search-bar">
-                <i class="ph ph-magnifying-glass"></i>
-                <input type="text" id="search-siswa" placeholder="Cari berdasarkan Nama atau NIS...">
+            <!-- SEARCH & FILTER BAR KELAS -->
+            <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
+                <div class="search-bar" style="flex: 2; margin-bottom: 0;">
+                    <i class="ph ph-magnifying-glass"></i>
+                    <input type="text" id="search-siswa" placeholder="Cari Nama atau NIS...">
+                </div>
+                <div class="field" style="flex: 1; min-width: 120px;">
+                    <select id="filter-kelas" style="height: 100%; border-radius: 10px;">
+                        <option value="">Semua Kelas</option>
+                        <!-- Pilihan kelas akan di-generate otomatis oleh app.js -->
+                    </select>
+                </div>
             </div>
 
             <div id="siswa-table-wrap"></div>
