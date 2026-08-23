@@ -37,8 +37,9 @@ body.dark-theme {
 /* Memastikan tulisan di tombol terbaca saat Mode Gelap */
 body.dark-theme .btn { color: #0a0a0a; font-weight: 700; }
 body.dark-theme .btn.secondary { background: transparent; color: var(--text-main); }
-body.dark-theme .btn.danger { background: var(--danger); color: white; }
-body.dark-theme .btn.warning { background: var(--warning); color: white; }
+body.dark-theme .btn.danger { background: #404040; color: #ffffff; }
+body.dark-theme .btn.warning { background: transparent; color: var(--text-main); border: 1px solid var(--text-muted); }
+body.dark-theme .btn.warning:hover { background: rgba(255,255,255,0.1); }
 
 /* KUNCI: Membuat Logo Hitam otomatis menjadi Putih saat Dark Mode */
 body.dark-theme .app-logo {
@@ -82,7 +83,7 @@ body.dark-theme .qr-card { background: #f8fafc; color: #0f172a; } /* QR Card har
 /* Hover tabel bisa diklik untuk sorting */
 th.sortable { cursor: pointer; user-select: none; }
 th.sortable:hover { background-color: var(--primary-light); color: var(--primary); }
-body.dark-theme th.sortable:hover { background-color: rgba(79, 70, 229, 0.2); }
+body.dark-theme th.sortable:hover { background-color: rgba(255, 255, 255, 0.1); }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -152,7 +153,7 @@ body {
     display: flex; align-items: center; justify-content: center; gap: 8px;
     transition: all 0.3s ease; border-bottom: 3px solid transparent;
 }
-.tab:hover { color: var(--primary); background: rgba(79, 70, 229, 0.04); }
+.tab:hover { color: var(--primary); background: rgba(0, 0, 0, 0.04); }
 .tab.active { color: var(--primary); border-bottom: 3px solid var(--primary); }
 
 /* Main Content */
@@ -192,15 +193,15 @@ input:focus, select:focus { outline: none; border-color: var(--primary); box-sha
     font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px;
     transition: all 0.2s ease; box-shadow: var(--shadow-primary);
 }
-.btn:hover { background: var(--primary-hover); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(79, 70, 229, 0.4); }
+.btn:hover { background: var(--primary-hover); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15); }
 .btn:active { transform: translateY(0); }
 
 .btn.secondary { background: white; color: var(--text-main); border: 1px solid var(--border); box-shadow: var(--shadow-sm); }
 .btn.secondary:hover { background: #f1f5f9; box-shadow: var(--shadow-md); transform: none;}
-.btn.danger { background: var(--danger); box-shadow: 0 4px 14px 0 rgba(239, 68, 68, 0.39); }
-.btn.danger:hover { background: #dc2626; box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4); }
-.btn.warning { background: var(--warning); box-shadow: 0 4px 14px 0 rgba(245, 158, 11, 0.39); }
-.btn.warning:hover { background: #d97706; box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4); }
+.btn.danger { background: #404040; box-shadow: 0 4px 14px 0 rgba(0, 0, 0, 0.15); }
+.btn.danger:hover { background: #000000; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2); }
+.btn.warning { background: transparent; color: var(--text-main); border: 1px solid var(--border); box-shadow: none; }
+.btn.warning:hover { background: var(--primary-light); border-color: var(--text-muted); }
 .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
 
 /* Tables */
@@ -234,14 +235,18 @@ tr:hover td { background: #f8fafc; }
 .stat-card::after { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: var(--border); transition: all 0.3s ease; }
 .stat-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); }
 .stat-card:nth-child(1):hover::after { background: var(--text-muted); }
-.stat-card.text-success:hover::after { background: var(--success); }
-.stat-card.text-warning:hover::after { background: var(--warning); }
-.stat-card.text-danger:hover::after { background: var(--danger); }
+/* Hover garis bawah kartu */
+.stat-card.text-success:hover::after { background: var(--primary); }
+.stat-card.text-warning:hover::after { background: var(--text-muted); }
+.stat-card.text-danger:hover::after { background: #404040; }
+
 .stat-card h3 { font-size: 32px; font-weight: 700; margin-bottom: 8px; color: var(--text-main); }
 .stat-card p { font-size: 13px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
-.text-success h3 { color: var(--success); }
-.text-warning h3 { color: var(--warning); }
-.text-danger h3 { color: var(--danger); }
+
+/* Warna Teks Persentase menjadi Skala Hitam/Abu */
+.text-success h3 { color: var(--primary); } 
+.text-warning h3 { color: var(--text-muted); }
+.text-danger h3 { color: var(--text-main); }
 
 /* Scanner Layout */
 .scan-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 35px; }
@@ -263,14 +268,14 @@ tr:hover td { background: #f8fafc; }
     background: white; box-shadow: var(--shadow-sm); position: relative; overflow: hidden; transition: transform 0.2s;
 }
 .qr-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
-.qr-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 6px; background: linear-gradient(90deg, var(--primary), #818cf8); }
+.qr-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: var(--primary); }
 .qr-card h3 { font-size: 18px; font-weight: 700; margin-bottom: 6px; margin-top: 15px;}
 .qr-card p { font-size: 14px; color: var(--text-muted); margin-bottom: 24px; font-weight: 500; }
 .qr-code { display: inline-flex; justify-content: center; padding: 12px; background: white; border-radius: 12px; border: 1px solid var(--border); box-shadow: var(--shadow-sm);}
 
 /* Toast Notifications */
 #toast { 
-    position: fixed; top: 24px; right: 24px; background: #0f172a; color: white; 
+    position: fixed; top: 24px; right: 24px; background: var(--primary); color: var(--bg-card); 
     padding: 16px 24px; border-radius: 10px; transform: translateX(150%); 
     transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1); z-index: 1000; 
     font-weight: 500; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3); display: flex; align-items: center; gap: 12px; 

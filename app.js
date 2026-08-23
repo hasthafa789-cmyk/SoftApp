@@ -60,7 +60,7 @@ function promptPIN(callback) {
     Swal.fire({
         title: 'Otorisasi Diperlukan', input: 'password', inputLabel: 'Masukkan PIN Admin', inputPlaceholder: '****',
         inputAttributes: { autocapitalize: 'off', autocorrect: 'off' }, showCancelButton: true, confirmButtonText: 'Verifikasi',
-        confirmButtonColor: '#4f46e5', cancelButtonText: 'Batal',
+        confirmButtonColor: '#171717', cancelButtonText: 'Batal',
         preConfirm: (pin) => { if (!pin) Swal.showValidationMessage('PIN tidak boleh kosong!'); return pin; }
     }).then((result) => { if (result.isConfirmed) callback(result.value); });
 }
@@ -200,7 +200,7 @@ function batalEdit() {
 document.getElementById('btn-batal-edit')?.addEventListener('click', batalEdit);
 
 window.hapusSiswa = function(nis) {
-    Swal.fire({ title: 'Yakin Hapus?', text: "Data tidak bisa dikembalikan!", icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', cancelButtonColor: '#64748b', confirmButtonText: 'Ya, Hapus!'
+    Swal.fire({ title: 'Yakin Hapus?', text: "Data tidak bisa dikembalikan!", icon: 'warning', showCancelButton: true, confirmButtonColor: '#171717', cancelButtonColor: '#737373', confirmButtonText: 'Ya, Hapus!'
     }).then((result) => {
         if (result.isConfirmed) {
             promptPIN(async (pin) => {
@@ -215,7 +215,7 @@ window.hapusSiswa = function(nis) {
 }
 
 document.getElementById('btn-hapus-semua')?.addEventListener('click', () => {
-    Swal.fire({ title: 'Hapus SEMUA Data?', text: "Sistem akan di-reset total!", icon: 'error', showCancelButton: true, confirmButtonColor: '#ef4444', cancelButtonColor: '#64748b', confirmButtonText: 'RESET SISTEM'
+    Swal.fire({ title: 'Hapus SEMUA Data?', text: "Sistem akan di-reset total!", icon: 'error', showCancelButton: true, confirmButtonColor: '#171717', cancelButtonColor: '#737373', confirmButtonText: 'RESET SISTEM'
     }).then((result) => {
         if (result.isConfirmed) {
             promptPIN(async (pin) => {
