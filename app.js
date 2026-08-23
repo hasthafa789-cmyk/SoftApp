@@ -29,8 +29,16 @@ window.addEventListener('beforeinstallprompt', (e) => {
 // ==========================================
 // STATE MANAGEMENT & GLOBAL VARIABLES
 // ==========================================
-let dataSiswa = JSON.parse(localStorage.getItem('siswa_pro')) || [];
-let dataAbsen = JSON.parse(localStorage.getItem('absensi_pro')) || {};
+// ==========================================
+// STATE MANAGEMENT & GLOBAL VARIABLES
+// ==========================================
+// Hapus memori lama yang membandel di HP Anda
+localStorage.removeItem('siswa_pro');
+localStorage.removeItem('absensi_pro');
+
+// Jadikan variabel kosong saat awal buka (menunggu data dari Cloud)
+let dataSiswa = [];
+let dataAbsen = {};
 let videoStream = null;
 let scanInterval = null;
 let editModeNIS = null;
@@ -89,7 +97,7 @@ document.getElementById('btn-login')?.addEventListener('click', () => {
 });
 
 // MASUKKAN URL GOOGLE APPS SCRIPT ANDA DI SINI
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwHjKdzKqzvGEEBTYcSxH-ooSnsiucPLSfK2ex8RiXliTtb8v_CUSw4uWxzGr6I8NgpcA/exec';
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyVMH1AfG0xRxeityWaCFI_bzxwIJ0vejP_F8-KuGWPDJfV9vuZIoR-uQ1D9q-ryQ8Ieg/exec';
 
 // ==========================================
 // SWEETALERT2 & UTILS PENDUKUNG
@@ -181,20 +189,33 @@ async function fetchToCloud(formData) {
 }
 
 async function syncDataLokalDenganCloud() {
-    if(!navigator.onLine) return;
+    if(!navigator.onLine) {
+        showToast("Anda Sedang Offline! Gagal memuat data.", "error");
+        return;
+    }
     setLoading(true);
     try {
         const response = await fetch(GOOGLE_SCRIPT_URL);
         const textData = await response.text();
         let dataCloud;
         try { dataCloud = JSON.parse(textData); } catch (e) { throw new Error("Respons bukan JSON"); }
+        
         if (dataCloud) {
-            if (dataCloud.siswa && dataCloud.siswa.length > 0) dataSiswa = dataCloud.siswa;
-            if (dataCloud.absensi && Object.keys(dataCloud.absensi).length > 0) dataAbsen = dataCloud.absensi;
-            simpanData(); updateUI();
+            // KUNCI: Menimpa data secara mutlak. Jika di spreadsheet dihapus, web akan ikut terhapus!
+            dataSiswa = dataCloud.siswa || [];
+            dataAbsen = dataCloud.absensi || {};
+            updateUI();
         }
-    } catch (error) { console.log('Gagal sync background'); }
+    } catch (error) { 
+        console.log('Gagal menarik data dari server'); 
+        showToast('Koneksi ke Spreadsheet Gagal', 'error');
+    }
     finally { setLoading(false); }
+}
+
+function simpanData() { 
+    // FUNGSI INI SENGAJA DIKOSONGKAN
+    // Kita tidak lagi menggunakan memori lokal HP (Local Storage)
 }
 
 function updateUI() { 
@@ -229,8 +250,6 @@ function updateDropdownKelas() {
         filterKelasInput.value = selectedValue;
     }
 }
-
-function simpanData() { localStorage.setItem('siswa_pro', JSON.stringify(dataSiswa)); localStorage.setItem('absensi_pro', JSON.stringify(dataAbsen)); }
 
 // ==========================================
 // FITUR 1: MANAJEMEN SISWA & SORTING
@@ -501,7 +520,7 @@ async function catatAbsen(nis, status, isManual = false) {
 
     // Gunakan format standar Internasional (HH:mm) agar valid di semua HP
     const waktuSekarang = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-    const batasJam = document.getElementById('input-batas-jam')?.value || '12:00';
+    const batasJam = document.getElementById('input-batas-jam')?.value || '07:15';
     
     // KECERDASAN BUATAN: Auto-Deteksi Terlambat
     let finalStatus = status;
@@ -509,14 +528,15 @@ async function catatAbsen(nis, status, isManual = false) {
         finalStatus = 'Terlambat';
     }
 
+    // KUNCI PERBAIKAN: Gunakan 'await' agar data masuk satu per satu (Antrean)
+    let formData = new URLSearchParams({ aksi: 'absen', tanggal: tgl, waktu: waktuSekarang, nis: siswa.nis, nama: siswa.nama, kelas: siswa.kelas, status: finalStatus });
+    await fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: formData }).catch(e => console.log('Sinkronisasi terputus'));
+
     if (!dataAbsen[tgl]) dataAbsen[tgl] = []; dataAbsen[tgl] = dataAbsen[tgl].filter(a => a.nis !== nis);
     dataAbsen[tgl].push({ nis: siswa.nis, nama: siswa.nama, kelas: siswa.kelas, waktu: waktuSekarang, status: finalStatus });
     
-    simpanData(); renderAbsensi(); if(selectSiswaManual) selectSiswaManual.value = '';
-    if (!isManual) playBeep(false); showToast(`${siswa.nama} ditandai: ${finalStatus}`, finalStatus === 'Terlambat' ? 'warning' : 'success');
-
-    let formData = new URLSearchParams({ aksi: 'absen', tanggal: tgl, waktu: waktuSekarang, nis: siswa.nis, nama: siswa.nama, kelas: siswa.kelas, status: finalStatus });
-    fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: formData }).catch(e => console.log('Sinkronisasi offline'));
+    renderAbsensi(); if(selectSiswaManual) selectSiswaManual.value = '';
+    if (!isManual) { playBeep(false); showToast(`${siswa.nama} ditandai: ${finalStatus}`, finalStatus === 'Terlambat' ? 'warning' : 'success'); }
 }
 
 dateInput?.addEventListener('change', renderAbsensi);
@@ -880,16 +900,34 @@ window.prosesBulk = function(statusTarget) {
     if(checked.length === 0) return;
     
     Swal.fire({
-        title: 'Absensi Massal', text: `Anda akan menandai ${checked.length} siswa sebagai ${statusTarget}?`,
-        icon: 'question', showCancelButton: true, confirmButtonText: 'Ya, Tandai!',
-        confirmButtonColor: '#171717', cancelButtonColor: '#737373'
+        title: 'Sinkronisasi Cloud', 
+        text: `Sistem akan menyetorkan ${checked.length} data secara berurutan ke Spreadsheet agar tidak ditolak oleh Google.`,
+        icon: 'info', 
+        showCancelButton: true, 
+        confirmButtonText: 'Mulai Proses',
+        confirmButtonColor: '#171717', 
+        cancelButtonColor: '#737373'
     }).then(async (result) => {
         if (result.isConfirmed) {
             setLoading(true);
-            // Eksekusi absen berurutan dengan cepat
-            for(let cb of checked) { await catatAbsen(cb.value, statusTarget, true); }
+            
+            // Eksekusi absen BERURUTAN dengan Indikator Loading
+            const textLoading = document.querySelector('.loading-overlay p');
+            
+            for(let i = 0; i < checked.length; i++) {
+                if(textLoading) textLoading.innerText = `Menyimpan ${i + 1} dari ${checked.length} siswa...`;
+                // Panggil fungsi catatAbsen secara bergantian
+                await catatAbsen(checked[i].value, statusTarget, true); 
+            }
+            
+            // Kembalikan teks loading ke semula
+            if(textLoading) textLoading.innerText = 'Memproses Data...';
+            
+            // Tarik kembali data terbaru dari Spreadsheet untuk memastikan akurasi
+            await syncDataLokalDenganCloud();
+            
             setLoading(false);
-            showToast(`${checked.length} siswa berhasil ditandai!`, 'success');
+            showToast(`${checked.length} siswa berhasil disetorkan!`, 'success');
         }
     });
 }
