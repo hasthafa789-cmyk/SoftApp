@@ -1,4 +1,32 @@
 // ==========================================
+// REGISTRASI PWA (SERVICE WORKER & INSTALL)
+// ==========================================
+let deferredPrompt;
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+            .then((reg) => console.log('Service Worker Terdaftar!', reg.scope))
+            .catch((err) => console.log('Service Worker Gagal:', err));
+    });
+}
+
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    const installBtn = document.getElementById('btn-install-pwa');
+    if (installBtn) {
+        installBtn.style.display = 'flex'; // Munculkan tombol
+        installBtn.addEventListener('click', async () => {
+            installBtn.style.display = 'none';
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            console.log(`User memilih: ${outcome}`);
+            deferredPrompt = null;
+        });
+    }
+});
+
+// ==========================================
 // STATE MANAGEMENT & GLOBAL VARIABLES
 // ==========================================
 let dataSiswa = JSON.parse(localStorage.getItem('siswa_pro')) || [];

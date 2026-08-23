@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SoftApp - Ultimate Enterprise</title>
+
+    <!-- PWA Settings -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0f172a">
+    <link rel="apple-touch-icon" href="icon-192.png">
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -46,9 +51,15 @@
                 <p class="subtitle">Sistem Manajemen Siswa & Presensi Pintar</p>
             </div>
         </div>
-        <button id="btn-theme-toggle" class="btn secondary" style="border-radius: 50%; padding: 12px; border: none; background: rgba(255,255,255,0.1); color: white;" title="Ganti Tema">
-            <i class="ph ph-moon" style="font-size: 20px;"></i>
-        </button>
+        
+        <div style="display: flex; gap: 10px; margin-left: auto;">
+            <!-- BARU: Tombol Install Aplikasi PWA -->
+            <button id="btn-install-pwa" class="btn success" style="display: none; background: #10b981; border: none;"><i class="ph ph-download-simple"></i> Install App</button>
+            
+            <button id="btn-theme-toggle" class="btn secondary" style="border-radius: 50%; padding: 12px; border: none; background: rgba(255,255,255,0.1); color: white;" title="Ganti Tema">
+                <i class="ph ph-moon" style="font-size: 20px;"></i>
+            </button>
+        </div>
     </header>
 
     <nav class="tabs">
