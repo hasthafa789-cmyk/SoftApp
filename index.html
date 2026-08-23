@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>SoftApp - Ultimate Enterprise</title>
 
     <!-- PWA Settings -->
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#0f172a">
+    <meta name="theme-color" content="#ffffff">
     <link rel="apple-touch-icon" href="icon-192.png">
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -47,12 +47,26 @@
 <div id="app">
     <header class="masthead">
         <div style="display: flex; align-items: center; gap: 20px;">
-            <div class="stamp-badge"><i class="ph ph-shield-check"></i></div>
+            <!-- MENGGUNAKAN LOGO ASLI ANDA -->
+            <div class="stamp-badge">
+                <img src="icon-192.png" alt="SoftApp Logo" class="app-logo">
+            </div>
             <div>
-                <h1>SoftApp <span style="font-size: 14px; background: #10b981; padding: 2px 8px; border-radius: 12px; vertical-align: middle;">ULTIMATE</span></h1>
-                <p class="subtitle">Sistem Manajemen Siswa & Presensi Pintar</p>
+                <h1 style="color: var(--text-main);">SoftApp <span class="badge-ultimate">ULTIMATE</span></h1>
+                <p class="subtitle">Sistem Manajemen & Presensi Presisi</p>
             </div>
         </div>
+        
+        <div style="display: flex; gap: 10px; margin-left: auto;">
+            <!-- Tombol Install PWA -->
+            <button id="btn-install-pwa" class="btn" style="display: none;"><i class="ph ph-download-simple"></i> Install</button>
+            
+            <!-- Tombol Tema -->
+            <button id="btn-theme-toggle" class="btn secondary" style="border-radius: 50%; padding: 12px; display: flex; align-items: center; justify-content: center;" title="Ganti Tema">
+                <i class="ph ph-moon" style="font-size: 20px;"></i>
+            </button>
+        </div>
+    </header>
         
         <div style="display: flex; gap: 10px; margin-left: auto;">
             <!-- BARU: Tombol Install Aplikasi PWA -->

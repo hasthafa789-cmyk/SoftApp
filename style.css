@@ -1,15 +1,15 @@
-/* style.css - Professional Modern UI Upgrade */
-
 :root {
-    --primary: #4f46e5;
-    --primary-hover: #4338ca;
-    --primary-light: #e0e7ff;
-    --bg-main: #f8fafc;
+    /* Tema Monokrom Premium */
+    --primary: #171717;       /* Hitam Pekat */
+    --primary-hover: #262626; /* Hitam Terang */
+    --primary-light: #f5f5f5; /* Abu-abu sangat terang */
+    --bg-main: #fcfcfc;       /* Putih tulang */
     --bg-card: #ffffff;
-    --text-main: #0f172a;
-    --text-muted: #64748b;
-    --border: #e2e8f0;
+    --text-main: #171717;
+    --text-muted: #737373;
+    --border: #e5e5e5;
     
+    /* Warna Status Tetap Dipertahankan */
     --success: #10b981;
     --success-bg: #d1fae5;
     --warning: #f59e0b;
@@ -18,9 +18,31 @@
     --danger-bg: #fee2e2;
 
     --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-    --shadow-primary: 0 4px 14px 0 rgba(79, 70, 229, 0.39);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025);
+    --shadow-primary: 0 4px 14px 0 rgba(0, 0, 0, 0.15);
+}
+
+body.dark-theme {
+    --bg-main: #0a0a0a;
+    --bg-card: #171717;
+    --text-main: #f5f5f5;
+    --text-muted: #a3a3a3;
+    --border: #262626;
+    --primary: #ffffff;       /* Tombol Utama jadi Putih di Mode Gelap */
+    --primary-hover: #e5e5e5;
+    --primary-light: #262626;
+}
+
+/* Memastikan tulisan di tombol terbaca saat Mode Gelap */
+body.dark-theme .btn { color: #0a0a0a; font-weight: 700; }
+body.dark-theme .btn.secondary { background: transparent; color: var(--text-main); }
+body.dark-theme .btn.danger { background: var(--danger); color: white; }
+body.dark-theme .btn.warning { background: var(--warning); color: white; }
+
+/* KUNCI: Membuat Logo Hitam otomatis menjadi Putih saat Dark Mode */
+body.dark-theme .app-logo {
+    filter: invert(1);
 }
 
 /* ================= BARU: INDIKATOR JARINGAN & FULLSCREEN ================= */
@@ -41,15 +63,6 @@
     border-radius: 0 !important; border: none !important;
 }
 .scanner-box.fullscreen video { object-fit: cover !important; }
-
-/* ================= BARU: VARIABEL DARK MODE ================= */
-body.dark-theme {
-    --bg-main: #0f172a;
-    --bg-card: #1e293b;
-    --text-main: #f8fafc;
-    --text-muted: #94a3b8;
-    --border: #334155;
-}
 
 /* Transisi halus saat ganti tema */
 body, #app, .tab, .stat-card, .qr-card, .form-row, input, select, table, th, td, .chart-container {
@@ -92,26 +105,41 @@ body {
     position: relative;
 }
 
-/* Header & Nav */
+/* Header Bersih (Tanpa Gradien) */
 .masthead {
-    padding: 35px 30px;
-    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-    color: white;
+    padding: 30px 30px;
+    background: var(--bg-card);
     display: flex;
     align-items: center;
     gap: 24px;
-    border-bottom: 4px solid var(--primary);
+    border-bottom: 1px solid var(--border);
 }
 
+/* Penempatan Logo */
 .stamp-badge {
-    background: linear-gradient(135deg, var(--primary) 0%, #6366f1 100%);
-    width: 56px; height: 56px; border-radius: 14px;
+    background: var(--bg-main);
+    width: 60px; height: 60px; border-radius: 14px;
     display: flex; align-items: center; justify-content: center;
-    font-size: 32px; box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    border: 1px solid var(--border);
+    padding: 10px;
+}
+.app-logo {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
 }
 
 .masthead h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 2px;}
-.subtitle { color: #94a3b8; font-size: 14px; font-weight: 500; }
+.subtitle { color: var(--text-muted); font-size: 14px; font-weight: 500; }
+
+.badge-ultimate {
+    font-size: 12px; background: var(--primary); color: var(--bg-card); 
+    padding: 4px 10px; border-radius: 20px; vertical-align: middle; 
+    letter-spacing: 1px; font-weight: 700; margin-left: 5px;
+}
+
+/* Ganti Hiasan Kartu QR dari ungu menjadi garis abu elegan */
+.qr-card::before { background: var(--border); }
 
 .tabs {
     display: flex; background: var(--bg-card);

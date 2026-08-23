@@ -443,9 +443,15 @@ function renderTrendChart() {
     if(!ctx || typeof Chart === 'undefined') return;
     
     const isDark = document.body.classList.contains('dark-theme');
-    const gridColor = isDark ? '#334155' : '#e2e8f0'; const textColor = isDark ? '#94a3b8' : '#64748b';
+    const gridColor = isDark ? '#262626' : '#e5e5e5'; 
+    const textColor = isDark ? '#a3a3a3' : '#737373';
+    
+    // Warna garis grafik menyesuaikan tema (Hitam di Terang, Putih di Gelap)
+    const lineColor = isDark ? '#ffffff' : '#171717';
+    const bgFill = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(23, 23, 23, 0.05)';
 
-    let availableDates = Object.keys(dataAbsen).sort(); let last7Dates = availableDates.slice(-7);
+    let availableDates = Object.keys(dataAbsen).sort(); 
+    let last7Dates = availableDates.slice(-7);
     if (last7Dates.length === 0 && dateInput) last7Dates = [dateInput.value];
 
     const labels = []; const dataHadir = [];
@@ -457,8 +463,28 @@ function renderTrendChart() {
     if (myChart) { myChart.destroy(); } 
     myChart = new Chart(ctx.getContext('2d'), {
         type: 'line', 
-        data: { labels: labels, datasets: [{ label: 'Hadir', data: dataHadir, borderColor: '#4f46e5', backgroundColor: 'rgba(79, 70, 229, 0.1)', borderWidth: 3, fill: true, tension: 0.4, pointBackgroundColor: '#4f46e5', pointRadius: 5 }] },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, suggestedMax: dataSiswa.length || 10, ticks: { stepSize: 1, color: textColor }, grid: { color: gridColor } }, x: { ticks: { color: textColor }, grid: { display: false } } } }
+        data: { 
+            labels: labels, 
+            datasets: [{ 
+                label: 'Hadir', 
+                data: dataHadir, 
+                borderColor: lineColor, 
+                backgroundColor: bgFill, 
+                borderWidth: 3, 
+                fill: true, 
+                tension: 0.4, 
+                pointBackgroundColor: lineColor, 
+                pointRadius: 5 
+            }] 
+        },
+        options: { 
+            responsive: true, maintainAspectRatio: false, 
+            plugins: { legend: { display: false } }, 
+            scales: { 
+                y: { beginAtZero: true, suggestedMax: dataSiswa.length || 10, ticks: { stepSize: 1, color: textColor }, grid: { color: gridColor } }, 
+                x: { ticks: { color: textColor }, grid: { display: false } } 
+            } 
+        }
     });
 }
 
