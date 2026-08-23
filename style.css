@@ -380,3 +380,81 @@ tr:hover td { background: #f8fafc; }
         box-shadow: none !important;
     }
 }
+
+/* =========================================
+   PWA & NATIVE APP EXPERIENCE (HP & DESKTOP)
+   ========================================= */
+
+/* 1. Cegah efek "Tarik untuk Refresh" (Pull-to-refresh) di HP */
+body {
+    overscroll-behavior-y: contain;
+}
+
+/* 2. Cegah Teks UI tersorot/ter-highlight biru secara tidak sengaja saat disentuh */
+.masthead, .tabs, .btn, th, .stat-card, .att-toggles {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent; /* Hilangkan kotak biru saat diklik di HP */
+}
+
+/* 3. ATURAN KHUSUS KETIKA DIBUKA DARI HOMESCREEN HP (MODE PWA) */
+@media (display-mode: standalone) {
+    /* Pastikan tombol Install App hilang karena sudah diinstal */
+    #btn-install-pwa {
+        display: none !important;
+    }
+
+    /* Tambahkan ruang aman untuk Poni Kamera (Notch) pada iPhone / Android modern */
+    .masthead {
+        padding-top: calc(35px + env(safe-area-inset-top));
+    }
+    
+    #app {
+        border-radius: 0; /* Buang sudut melengkung app agar full screen penuh */
+        margin: 0;
+        border: none;
+        min-height: 100vh;
+    }
+}
+
+/* 4. PEROMBAKAN MENU MENJADI BOTTOM NAVIGATION (HANYA UNTUK HP) */
+@media (max-width: 600px) {
+    /* Kunci menu Tab di bagian paling bawah layar */
+    .tabs {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        z-index: 9000;
+        box-shadow: 0 -4px 15px rgba(0,0,0,0.08);
+        padding-bottom: env(safe-area-inset-bottom); /* Ruang aman untuk garis Home iPhone */
+        border-top: 1px solid var(--border);
+        border-bottom: none;
+        justify-content: space-around;
+    }
+
+    /* Ubah gaya tombol menu menjadi Ikon besar, teks kecil */
+    .tab {
+        flex-direction: column;
+        font-size: 11px;
+        padding: 12px 5px;
+        gap: 6px;
+        border-bottom: none !important;
+    }
+    
+    .tab i { font-size: 24px; }
+    
+    .tab.active {
+        color: var(--primary);
+    }
+
+    /* Beri ruang kosong di bawah agar konten tidak tertutup menu navigasi */
+    main {
+        padding-bottom: 100px !important;
+    }
+    
+    /* Perbaikan Scanner Kamera agar tetap rapi di HP */
+    .scanner-box {
+        aspect-ratio: 3/4; /* Kamera berdiri tegak (Portrait) di HP */
+    }
+}
