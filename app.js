@@ -543,21 +543,29 @@ dateInput?.addEventListener('change', renderAbsensi);
 
 function renderAbsensi() {
     if (!dateInput) return;
-    const tgl = dateInput.value; const absenHariIni = dataAbsen[tgl] || []; const totalSiswa = dataSiswa.length;
-    let hadir = 0, sakitIzin = 0;
+    const tgl = dateInput.value; 
+    const absenHariIni = dataAbsen[tgl] || []; 
+    const totalSiswa = dataSiswa.length;
+    
+    // 1. Tambahkan variabel 'terlambat'
+    let hadir = 0, sakitIzin = 0, terlambat = 0;
     
     let htmlSudah = `<table><tr><th>Waktu</th><th>Nama</th><th>Kelas</th><th>Status</th></tr>`;
     [...absenHariIni].reverse().forEach(a => {
-        if(a.status === 'Hadir') hadir++; if(a.status === 'Sakit' || a.status === 'Izin') sakitIzin++;
+        // 2. Pisahkan perhitungannya
+        if(a.status === 'Hadir') hadir++; 
+        if(a.status === 'Terlambat') terlambat++; 
+        if(a.status === 'Sakit' || a.status === 'Izin') sakitIzin++;
+        
         htmlSudah += `<tr><td>${a.waktu}</td><td><strong>${a.nama}</strong></td><td>${a.kelas}</td><td><span class="badge ${a.status}">${a.status}</span></td></tr>`;
     });
+    
     const wrapSudah = document.getElementById('attendance-table-wrap');
     if(wrapSudah) wrapSudah.innerHTML = absenHariIni.length === 0 ? '<div class="empty-state">Belum ada absensi hari ini.</div>' : htmlSudah + '</table>';
 
     const sudahAbsenNIS = absenHariIni.map(a => a.nis);
     const siswaBelumAbsen = dataSiswa.filter(s => !sudahAbsenNIS.includes(s.nis));
     
-    // TABEL BELUM ABSEN (DENGAN FITUR BULK ACTION / AKSI MASSAL)
     let htmlBelum = `
     <div id="bulk-panel" style="display:none; padding:15px; background:var(--bg-card); border-radius:8px; border:1px solid var(--border); margin-bottom:15px; gap:10px; align-items:center; flex-wrap:wrap;">
         <span style="font-size:13px; font-weight:600;">Tandai Massal:</span>
@@ -578,11 +586,17 @@ function renderAbsensi() {
     const wrapBelum = document.getElementById('belum-table-wrap');
     if(wrapBelum) wrapBelum.innerHTML = siswaBelumAbsen.length === 0 ? '<div class="empty-state">Semua siswa sudah diabsen.</div>' : htmlBelum + '</table>';
 
-    const absenDanAlpa = totalSiswa - hadir - sakitIzin;
+    // 3. Masukkan 'terlambat' sebagai pengurang angka 'Belum Absen'
+    const absenDanAlpa = totalSiswa - hadir - terlambat - sakitIzin;
+    
+    // 4. Suntikkan ke 5 Kotak Dashboard
     const cards = document.querySelectorAll('.stat-card h3');
-    if(cards.length === 4) { 
-        cards[0].textContent = totalSiswa; cards[1].textContent = (totalSiswa ? Math.round((hadir/totalSiswa)*100) : 0) + '%'; 
-        cards[2].textContent = (totalSiswa ? Math.round((sakitIzin/totalSiswa)*100) : 0) + '%'; cards[3].textContent = (totalSiswa ? Math.round((absenDanAlpa/totalSiswa)*100) : 0) + '%'; 
+    if(cards.length >= 5) { 
+        cards[0].textContent = totalSiswa; 
+        cards[1].textContent = (totalSiswa ? Math.round((hadir/totalSiswa)*100) : 0) + '%'; 
+        cards[2].textContent = (totalSiswa ? Math.round((terlambat/totalSiswa)*100) : 0) + '%'; 
+        cards[3].textContent = (totalSiswa ? Math.round((sakitIzin/totalSiswa)*100) : 0) + '%'; 
+        cards[4].textContent = (totalSiswa ? Math.round((absenDanAlpa/totalSiswa)*100) : 0) + '%'; 
     }
     const countSudah = document.getElementById('count-sudah'); if(countSudah) countSudah.textContent = absenHariIni.length; 
     const countBelum = document.getElementById('count-belum'); if(countBelum) countBelum.textContent = siswaBelumAbsen.length;

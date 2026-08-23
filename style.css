@@ -646,3 +646,36 @@ input[type="checkbox"] {
 .insight-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px dashed var(--border); font-size: 14px; align-items: center; }
 .insight-item:last-child { border-bottom: none; }
 .insight-item strong { color: var(--text-main); }
+
+/* =========================================================
+   PERBAIKAN GRID 5 KOTAK (STATISTIK TERLAMBAT)
+   ========================================================= */
+.stats-grid { 
+    grid-template-columns: repeat(5, 1fr) !important; 
+}
+.stat-card.text-purple:hover::after { background: #9333ea !important; }
+.text-purple h3 { color: #9333ea !important; }
+body.dark-theme .text-purple h3 { color: #c084fc !important; }
+
+/* Menyesuaikan di layar HP agar rapi (Total Siswa lebar penuh) */
+@media (max-width: 768px) {
+    .stats-grid { grid-template-columns: repeat(2, 1fr) !important; }
+    .stat-card:nth-child(1) { grid-column: 1 / -1; } 
+}
+
+/* =========================================================
+   PERBAIKAN GRID 5 KOTAK (TEMA MONOKROM ELEGAN)
+   ========================================================= */
+.stats-grid { 
+    grid-template-columns: repeat(5, 1fr) !important; 
+}
+
+/* Warna Terlambat disesuaikan menjadi Monokrom (Abu-abu Gelap) */
+.stat-card.text-terlambat:hover::after { background: var(--text-muted) !important; }
+.text-terlambat h3 { color: var(--text-muted) !important; }
+
+/* Menyesuaikan di layar HP agar tetap rapi */
+@media (max-width: 768px) {
+    .stats-grid { grid-template-columns: repeat(2, 1fr) !important; }
+    .stat-card:nth-child(1) { grid-column: 1 / -1; } 
+}
