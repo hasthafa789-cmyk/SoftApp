@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SoftApp - Pro</title>
+    <title>SoftApp - Enterprise</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -12,14 +12,15 @@
     
     <link rel="stylesheet" href="style.css">
     
-    <!-- Library QR Code -->
+    <!-- Library Eksternal Lengkap -->
     <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js" defer></script>
-    
-    <!-- Library Tambahan untuk Fitur Pro -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js" defer></script>
+    
+    <!-- BARU: SweetAlert2 untuk Pop-up Profesional -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11" defer></script>
     
     <!-- Script Utama -->
     <script src="app.js" defer></script>
@@ -28,16 +29,22 @@
 
 <div id="loading-overlay" class="loading-overlay">
     <div class="spinner"></div>
-    <p>Menyinkronkan Data...</p>
+    <p>Menyinkronkan Data Cloud...</p>
 </div>
 
 <div id="app">
     <header class="masthead">
-        <div class="stamp-badge"><i class="ph ph-shield-check"></i></div>
-        <div>
-            <h1>SoftApp</h1>
-            <p class="subtitle">Manajemen Data Siswa, Kartu QR, dan Pelaporan</p>
+        <div style="display: flex; align-items: center; gap: 20px;">
+            <div class="stamp-badge"><i class="ph ph-shield-check"></i></div>
+            <div>
+                <h1>SoftApp <span style="font-size: 14px; background: #10b981; padding: 2px 8px; border-radius: 12px; vertical-align: middle;">PRO</span></h1>
+                <p class="subtitle">Sistem Manajemen Siswa & Presensi Pintar</p>
+            </div>
         </div>
+        <!-- BARU: Tombol Dark Mode -->
+        <button id="btn-theme-toggle" class="btn secondary" style="border-radius: 50%; padding: 12px; border: none; background: rgba(255,255,255,0.1); color: white;" title="Ganti Tema">
+            <i class="ph ph-moon" style="font-size: 20px;"></i>
+        </button>
     </header>
 
     <nav class="tabs">
@@ -64,11 +71,11 @@
             <div class="form-row">
                 <div class="field">
                     <label for="input-nis">NIS / No. Induk</label>
-                    <input type="text" id="input-nis" placeholder="Contoh: 10101">
+                    <input type="text" id="input-nis" placeholder="Contoh: 10101" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
                 </div>
                 <div class="field" style="flex: 2;">
                     <label for="input-nama">Nama Lengkap Siswa</label>
-                    <input type="text" id="input-nama" placeholder="Contoh: Budi Santoso">
+                    <input type="text" id="input-nama" placeholder="Contoh: Budi Santoso" style="text-transform: capitalize;">
                 </div>
                 <div class="field">
                     <label for="input-kelas">Kelas</label>
@@ -84,7 +91,6 @@
             </div>
 
             <div id="siswa-table-wrap"></div>
-            <!-- Pagination Controls (Untuk menghindari Lag) -->
             <div id="pagination-controls" style="display: flex; justify-content: center; gap: 10px; margin-top: 25px;"></div>
         </section>
 
@@ -95,7 +101,7 @@
                     <h2 class="panel-title">Cetak Kartu Identitas</h2>
                     <p class="panel-hint">Gunakan kertas A4 untuk hasil cetak yang optimal.</p>
                 </div>
-                <button class="btn" id="btn-print-kartu"><i class="ph ph-printer"></i> Cetak Kartu (Ctrl+P)</button>
+                <button class="btn" id="btn-print-kartu"><i class="ph ph-printer"></i> Cetak Kartu</button>
             </div>
             <div id="cards-grid-wrap" class="cards-grid"></div>
         </section>
@@ -123,8 +129,7 @@
                 <div class="stat-card text-danger"><h3>0</h3><p>Belum Absen</p></div>
             </div>
             
-            <!-- Visualisasi Data Grafik -->
-            <div class="chart-container" style="background: white; padding: 20px; border-radius: 14px; border: 1px solid var(--border); margin-bottom: 30px; box-shadow: var(--shadow-sm);">
+            <div class="chart-container" style="background: var(--bg-card); padding: 20px; border-radius: 14px; border: 1px solid var(--border); margin-bottom: 30px; box-shadow: var(--shadow-sm);">
                 <canvas id="attendanceChart" height="70"></canvas>
             </div>
 
@@ -177,21 +182,5 @@
         </section>
     </main>
 </div>
-
-<!-- Modal Keamanan PIN -->
-<div id="pin-modal" class="modal">
-    <div class="modal-content">
-        <h3>Otorisasi Dibutuhkan</h3>
-        <p>Masukkan PIN Admin untuk melanjutkan aksi ini.</p>
-        <input type="password" id="input-pin" placeholder="PIN" style="width: 100%; text-align: center; margin: 15px 0; font-size: 20px; letter-spacing: 5px;">
-        <div class="modal-actions">
-            <button class="btn secondary" id="btn-cancel-pin">Batal</button>
-            <button class="btn danger" id="btn-confirm-pin">Lanjutkan</button>
-        </div>
-    </div>
-</div>
-
-<div id="toast"></div>
-
 </body>
 </html>

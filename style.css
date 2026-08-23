@@ -23,6 +23,35 @@
     --shadow-primary: 0 4px 14px 0 rgba(79, 70, 229, 0.39);
 }
 
+/* ================= BARU: VARIABEL DARK MODE ================= */
+body.dark-theme {
+    --bg-main: #0f172a;
+    --bg-card: #1e293b;
+    --text-main: #f8fafc;
+    --text-muted: #94a3b8;
+    --border: #334155;
+}
+
+/* Transisi halus saat ganti tema */
+body, #app, .tab, .stat-card, .qr-card, .form-row, input, select, table, th, td, .chart-container {
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+body.dark-theme input, body.dark-theme select {
+    background: #0f172a;
+    color: #f8fafc;
+}
+
+body.dark-theme table th { background: #0f172a; }
+body.dark-theme tr:hover td { background: #334155; }
+body.dark-theme .empty-state { background: #0f172a; }
+body.dark-theme .qr-card { background: #f8fafc; color: #0f172a; } /* QR Card harus tetap putih agar mudah di-scan */
+
+/* Hover tabel bisa diklik untuk sorting */
+th.sortable { cursor: pointer; user-select: none; }
+th.sortable:hover { background-color: var(--primary-light); color: var(--primary); }
+body.dark-theme th.sortable:hover { background-color: rgba(79, 70, 229, 0.2); }
+
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
