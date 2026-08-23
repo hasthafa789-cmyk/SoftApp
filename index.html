@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SoftApp - Enterprise</title>
+    <title>SoftApp - Ultimate Enterprise</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -18,9 +18,11 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js" defer></script>
-    
-    <!-- BARU: SweetAlert2 untuk Pop-up Profesional -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11" defer></script>
+    <!-- BARU: ExcelJS untuk Export Excel Lengkap dengan Warna & Format Rapi -->
+     <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js" defer></script>
+
+     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js" defer></script>
     
     <!-- Script Utama -->
     <script src="app.js" defer></script>
@@ -29,19 +31,21 @@
 
 <div id="loading-overlay" class="loading-overlay">
     <div class="spinner"></div>
-    <p>Menyinkronkan Data Cloud...</p>
+    <p>Memproses Data...</p>
 </div>
+
+<!-- BARU: Indikator Jaringan -->
+<div id="network-status" class="network-status online"><i class="ph ph-wifi-high"></i> Online</div>
 
 <div id="app">
     <header class="masthead">
         <div style="display: flex; align-items: center; gap: 20px;">
             <div class="stamp-badge"><i class="ph ph-shield-check"></i></div>
             <div>
-                <h1>SoftApp <span style="font-size: 14px; background: #10b981; padding: 2px 8px; border-radius: 12px; vertical-align: middle;">PRO</span></h1>
+                <h1>SoftApp <span style="font-size: 14px; background: #10b981; padding: 2px 8px; border-radius: 12px; vertical-align: middle;">ULTIMATE</span></h1>
                 <p class="subtitle">Sistem Manajemen Siswa & Presensi Pintar</p>
             </div>
         </div>
-        <!-- BARU: Tombol Dark Mode -->
         <button id="btn-theme-toggle" class="btn secondary" style="border-radius: 50%; padding: 12px; border: none; background: rgba(255,255,255,0.1); color: white;" title="Ganti Tema">
             <i class="ph ph-moon" style="font-size: 20px;"></i>
         </button>
@@ -118,7 +122,8 @@
                 </div>
                 <div class="header-actions">
                     <button class="btn warning" id="btn-export-pdf"><i class="ph ph-file-pdf"></i> Ekspor PDF</button>
-                    <button class="btn secondary" id="btn-export-csv"><i class="ph ph-download-simple"></i> Ekspor CSV</button>
+                    <!-- BARU: Tombol Export Excel -->
+                    <button class="btn success" id="btn-export-excel" style="background-color: #10b981; color: white;"><i class="ph ph-file-xls"></i> Ekspor Excel</button>
                 </div>
             </div>
 
@@ -140,12 +145,19 @@
                             <i class="ph ph-camera-slash" style="font-size: 40px; margin-bottom: 10px;"></i><br>
                             Kamera tidak aktif
                         </div>
+                        <!-- BARU: Tombol Fullscreen Kios -->
+                        <button id="btn-fullscreen" class="btn secondary" style="position: absolute; top: 10px; right: 10px; z-index: 10; padding: 8px; display: none;" title="Layar Penuh"><i class="ph ph-corners-out"></i></button>
                         <video id="scanner-video" playsinline muted></video>
                     </div>
                     <canvas id="scan-canvas" style="display:none;"></canvas>
-                    <div class="scanner-controls">
-                        <button class="btn" id="btn-start-scan"><i class="ph ph-play"></i> Mulai Scan</button>
-                        <button class="btn secondary" id="btn-stop-scan" disabled><i class="ph ph-stop"></i> Berhenti</button>
+                    
+                    <div class="scanner-controls" style="flex-wrap: wrap;">
+                        <!-- BARU: Pilihan Kamera Belakang/Depan -->
+                        <div class="field" style="flex: 1; min-width: 100%;">
+                            <select id="camera-select" style="width: 100%; font-size: 13px; padding: 10px;"><option value="">Mencari Kamera...</option></select>
+                        </div>
+                        <button class="btn" id="btn-start-scan" style="flex: 1; justify-content: center;"><i class="ph ph-play"></i> Mulai Scan</button>
+                        <button class="btn secondary" id="btn-stop-scan" disabled style="flex: 1; justify-content: center;"><i class="ph ph-stop"></i> Berhenti</button>
                     </div>
 
                     <div class="manual-entry">

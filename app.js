@@ -11,82 +11,38 @@ let currentPage = 1;
 const itemsPerPage = 10;
 let searchTimeout;
 let myChart = null; 
-
-// Konfigurasi Sorting
-let sortCol = 'nama'; 
-let sortAsc = true; 
+let sortCol = 'nama'; let sortAsc = true; 
+let availableCameras = [];
 
 // MASUKKAN URL GOOGLE APPS SCRIPT ANDA DI SINI
 const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxBrLwpbDpST9KpTyM2CEKbbkyjKtexA6bd7DjSPpt2LVjmimNkhigxNKrvD_otZtLscQ/exec';
 
 // ==========================================
-// SWEETALERT2: TOAST & MODAL PROFESIONAL
+// SWEETALERT2 & UTILS PENDUKUNG
 // ==========================================
 const Toast = Swal.mixin({
     toast: true, position: 'top-end', showConfirmButton: false, timer: 3000,
     timerProgressBar: true, didOpen: (toast) => {
-        toast.addEventListener('mouseenter', Swal.stopTimer)
-        toast.addEventListener('mouseleave', Swal.resumeTimer)
+        toast.addEventListener('mouseenter', Swal.stopTimer); toast.addEventListener('mouseleave', Swal.resumeTimer);
     }
 });
-
 function showToast(title, icon = 'success') { Toast.fire({ icon, title }); }
 
 function promptPIN(callback) {
     Swal.fire({
-        title: 'Otorisasi Diperlukan',
-        input: 'password',
-        inputLabel: 'Masukkan PIN Admin',
-        inputPlaceholder: '****',
-        inputAttributes: { autocapitalize: 'off', autocorrect: 'off' },
-        showCancelButton: true,
-        confirmButtonText: 'Verifikasi',
-        confirmButtonColor: '#4f46e5',
-        cancelButtonText: 'Batal',
+        title: 'Otorisasi Diperlukan', input: 'password', inputLabel: 'Masukkan PIN Admin', inputPlaceholder: '****',
+        inputAttributes: { autocapitalize: 'off', autocorrect: 'off' }, showCancelButton: true, confirmButtonText: 'Verifikasi',
+        confirmButtonColor: '#4f46e5', cancelButtonText: 'Batal',
         preConfirm: (pin) => { if (!pin) Swal.showValidationMessage('PIN tidak boleh kosong!'); return pin; }
-    }).then((result) => {
-        if (result.isConfirmed) callback(result.value);
-    });
+    }).then((result) => { if (result.isConfirmed) callback(result.value); });
 }
-
-// ==========================================
-// INISIALISASI & DARK MODE
-// ==========================================
-const dateInput = document.getElementById('input-tanggal-absensi');
-const selectSiswaManual = document.getElementById('manual-select-siswa');
-const searchInput = document.getElementById('search-siswa');
-const btnTheme = document.getElementById('btn-theme-toggle');
-
-document.addEventListener('DOMContentLoaded', () => {
-    // Inisialisasi Tema
-    if (localStorage.getItem('theme') === 'dark') {
-        document.body.classList.add('dark-theme');
-        btnTheme.innerHTML = '<i class="ph ph-sun" style="font-size: 20px;"></i>';
-    }
-
-    try {
-        const today = new Date();
-        if (dateInput) dateInput.value = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-        updateUI();
-        if (GOOGLE_SCRIPT_URL) syncDataLokalDenganCloud();
-    } catch (e) { console.error("Init Error: ", e); }
-});
-
-btnTheme?.addEventListener('click', () => {
-    document.body.classList.toggle('dark-theme');
-    const isDark = document.body.classList.contains('dark-theme');
-    localStorage.setItem('theme', isDark ? 'dark' : 'light');
-    btnTheme.innerHTML = isDark ? '<i class="ph ph-sun" style="font-size: 20px;"></i>' : '<i class="ph ph-moon" style="font-size: 20px;"></i>';
-    renderTrendChart(); // Re-render chart agar warnanya pas
-});
 
 function playBeep(isError = false) {
     try {
         const ctx = new (window.AudioContext || window.webkitAudioContext)();
         const osc = ctx.createOscillator(); const gain = ctx.createGain();
         osc.connect(gain); gain.connect(ctx.destination);
-        osc.type = isError ? 'sawtooth' : 'sine'; 
-        osc.frequency.setValueAtTime(isError ? 300 : 800, ctx.currentTime);
+        osc.type = isError ? 'sawtooth' : 'sine'; osc.frequency.setValueAtTime(isError ? 300 : 800, ctx.currentTime);
         gain.gain.setValueAtTime(0.1, ctx.currentTime);
         osc.start(); osc.stop(ctx.currentTime + (isError ? 0.3 : 0.1));
     } catch(e) {} 
@@ -94,56 +50,88 @@ function playBeep(isError = false) {
 
 function setLoading(isLoading) { document.getElementById('loading-overlay')?.classList.toggle('active', isLoading); }
 
+// ==========================================
+// INISIALISASI & DETEKSI JARINGAN LANSUNG (LIVE)
+// ==========================================
+const dateInput = document.getElementById('input-tanggal-absensi');
+const selectSiswaManual = document.getElementById('manual-select-siswa');
+const searchInput = document.getElementById('search-siswa');
+const btnTheme = document.getElementById('btn-theme-toggle');
+
+// Deteksi Online/Offline
+window.addEventListener('online',  () => setNetworkStatus(true));
+window.addEventListener('offline', () => setNetworkStatus(false));
+
+function setNetworkStatus(isOnline) {
+    const banner = document.getElementById('network-status');
+    if(!banner) return;
+    if(isOnline) {
+        banner.className = 'network-status online show'; banner.innerHTML = '<i class="ph ph-wifi-high"></i> Online - Sinkronisasi Aktif';
+        setTimeout(() => banner.classList.remove('show'), 3000);
+        syncDataLokalDenganCloud(); // Otomatis sync saat internet kembali
+    } else {
+        banner.className = 'network-status offline show'; banner.innerHTML = '<i class="ph ph-wifi-slash"></i> Offline - Data Disimpan Lokal';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+    if (localStorage.getItem('theme') === 'dark') { document.body.classList.add('dark-theme'); btnTheme.innerHTML = '<i class="ph ph-sun" style="font-size: 20px;"></i>'; }
+    try {
+        const today = new Date();
+        if (dateInput) dateInput.value = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+        updateUI();
+        if (GOOGLE_SCRIPT_URL) syncDataLokalDenganCloud();
+        
+        // Memuat daftar kamera
+        await initCameras();
+    } catch (e) { console.error("Init Error: ", e); }
+});
+
+btnTheme?.addEventListener('click', () => {
+    document.body.classList.toggle('dark-theme'); const isDark = document.body.classList.contains('dark-theme');
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    btnTheme.innerHTML = isDark ? '<i class="ph ph-sun" style="font-size: 20px;"></i>' : '<i class="ph ph-moon" style="font-size: 20px;"></i>';
+    renderTrendChart(); 
+});
+
 async function fetchToCloud(formData) {
+    if (!navigator.onLine) return { success: false, message: "Offline_Mode" }; // Jangan paksa nge-fetch jika jelas offline
     if (!GOOGLE_SCRIPT_URL) return { success: false, message: "URL tidak disetel." };
     try {
         setLoading(true);
         const response = await fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: formData });
         const textResult = await response.text(); 
         setLoading(false);
-        try { return JSON.parse(textResult); } 
-        catch (e) { return { success: true, message: textResult }; }
+        try { return JSON.parse(textResult); } catch (e) { return { success: true, message: textResult }; }
     } catch (error) { setLoading(false); return { success: false, message: "Offline_Mode" }; }
 }
 
 async function syncDataLokalDenganCloud() {
+    if(!navigator.onLine) return;
     setLoading(true);
     try {
         const response = await fetch(GOOGLE_SCRIPT_URL);
         const textData = await response.text();
         let dataCloud;
         try { dataCloud = JSON.parse(textData); } catch (e) { throw new Error("Respons bukan JSON"); }
-        
         if (dataCloud) {
-            let adaUpdate = false;
-            if (dataCloud.siswa && dataCloud.siswa.length > 0) { dataSiswa = dataCloud.siswa; adaUpdate = true; }
-            if (dataCloud.absensi && Object.keys(dataCloud.absensi).length > 0) { dataAbsen = dataCloud.absensi; adaUpdate = true; }
+            if (dataCloud.siswa && dataCloud.siswa.length > 0) dataSiswa = dataCloud.siswa;
+            if (dataCloud.absensi && Object.keys(dataCloud.absensi).length > 0) dataAbsen = dataCloud.absensi;
             simpanData(); updateUI();
-            if (adaUpdate) showToast('Data disinkronkan dari Cloud', 'success');
         }
-    } catch (error) { showToast('Sedang Offline (Mode Lokal)', 'warning'); }
+    } catch (error) { console.log('Gagal sync background'); }
     finally { setLoading(false); }
 }
 
-function updateUI() {
-    if (searchInput) renderTableSiswa(searchInput.value);
-    renderKartu(); renderAbsensi(); updateSelectManual();
-}
-
-function simpanData() {
-    localStorage.setItem('siswa_pro', JSON.stringify(dataSiswa));
-    localStorage.setItem('absensi_pro', JSON.stringify(dataAbsen));
-}
+function updateUI() { if (searchInput) renderTableSiswa(searchInput.value); renderKartu(); renderAbsensi(); updateSelectManual(); }
+function simpanData() { localStorage.setItem('siswa_pro', JSON.stringify(dataSiswa)); localStorage.setItem('absensi_pro', JSON.stringify(dataAbsen)); }
 
 // ==========================================
 // FITUR 1: MANAJEMEN SISWA & SORTING
 // ==========================================
 document.getElementById('btn-tambah-siswa')?.addEventListener('click', async () => {
-    const nis = document.getElementById('input-nis')?.value.trim();
-    const nama = document.getElementById('input-nama')?.value.trim();
-    const kelas = document.getElementById('input-kelas')?.value.trim();
+    const nis = document.getElementById('input-nis')?.value.trim(); const nama = document.getElementById('input-nama')?.value.trim(); const kelas = document.getElementById('input-kelas')?.value.trim();
     if (!nis || !nama || !kelas) return showToast('Lengkapi seluruh data!', 'warning');
-    
     let formData = new URLSearchParams({ nis, nama, kelas });
 
     if (editModeNIS) { 
@@ -184,9 +172,7 @@ function batalEdit() {
 document.getElementById('btn-batal-edit')?.addEventListener('click', batalEdit);
 
 window.hapusSiswa = function(nis) {
-    Swal.fire({
-        title: 'Yakin Hapus?', text: "Data tidak bisa dikembalikan!", icon: 'warning', showCancelButton: true,
-        confirmButtonColor: '#ef4444', cancelButtonColor: '#64748b', confirmButtonText: 'Ya, Hapus!'
+    Swal.fire({ title: 'Yakin Hapus?', text: "Data tidak bisa dikembalikan!", icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', cancelButtonColor: '#64748b', confirmButtonText: 'Ya, Hapus!'
     }).then((result) => {
         if (result.isConfirmed) {
             promptPIN(async (pin) => {
@@ -201,9 +187,7 @@ window.hapusSiswa = function(nis) {
 }
 
 document.getElementById('btn-hapus-semua')?.addEventListener('click', () => {
-    Swal.fire({
-        title: 'Hapus SEMUA Data?', text: "Operasi ini akan mereset sistem secara total!", icon: 'error', showCancelButton: true,
-        confirmButtonColor: '#ef4444', cancelButtonColor: '#64748b', confirmButtonText: 'RESET SISTEM'
+    Swal.fire({ title: 'Hapus SEMUA Data?', text: "Sistem akan di-reset total!", icon: 'error', showCancelButton: true, confirmButtonColor: '#ef4444', cancelButtonColor: '#64748b', confirmButtonText: 'RESET SISTEM'
     }).then((result) => {
         if (result.isConfirmed) {
             promptPIN(async (pin) => {
@@ -217,33 +201,21 @@ document.getElementById('btn-hapus-semua')?.addEventListener('click', () => {
     })
 });
 
-searchInput?.addEventListener('input', (e) => {
-    clearTimeout(searchTimeout); searchTimeout = setTimeout(() => { currentPage = 1; renderTableSiswa(e.target.value); }, 300);
-});
-
-// Fitur Baru: Handler Sorting Data
-window.handleSort = function(column) {
-    if (sortCol === column) sortAsc = !sortAsc;
-    else { sortCol = column; sortAsc = true; }
-    renderTableSiswa(searchInput?.value || '');
-}
+searchInput?.addEventListener('input', (e) => { clearTimeout(searchTimeout); searchTimeout = setTimeout(() => { currentPage = 1; renderTableSiswa(e.target.value); }, 300); });
+window.handleSort = function(column) { if (sortCol === column) sortAsc = !sortAsc; else { sortCol = column; sortAsc = true; } renderTableSiswa(searchInput?.value || ''); }
 
 function renderTableSiswa(filter = '') {
     const wrap = document.getElementById('siswa-table-wrap'); const pageControls = document.getElementById('pagination-controls');
     if (!wrap) return;
-    
     if (dataSiswa.length === 0) { wrap.innerHTML = '<div class="empty-state"><i class="ph ph-users" style="font-size:40px;"></i><br>Belum ada data.</div>'; if (pageControls) pageControls.innerHTML = ''; return; }
 
     const keyword = filter.toLowerCase();
     let filteredSiswa = dataSiswa.filter(s => s.nama.toLowerCase().includes(keyword) || s.nis.toLowerCase().includes(keyword));
 
-    // Logika Sorting Pintar
     filteredSiswa.sort((a, b) => {
         let valA = a[sortCol].toLowerCase(); let valB = b[sortCol].toLowerCase();
-        if(!isNaN(valA) && !isNaN(valB)) { valA = Number(valA); valB = Number(valB); } // Sort angka yang benar
-        if (valA < valB) return sortAsc ? -1 : 1;
-        if (valA > valB) return sortAsc ? 1 : -1;
-        return 0;
+        if(!isNaN(valA) && !isNaN(valB)) { valA = Number(valA); valB = Number(valB); } 
+        if (valA < valB) return sortAsc ? -1 : 1; if (valA > valB) return sortAsc ? 1 : -1; return 0;
     });
 
     if (filteredSiswa.length === 0) { wrap.innerHTML = '<div class="empty-state">Siswa tidak ditemukan.</div>'; if (pageControls) pageControls.innerHTML = ''; return; }
@@ -251,9 +223,7 @@ function renderTableSiswa(filter = '') {
     const totalPages = Math.ceil(filteredSiswa.length / itemsPerPage); const startIdx = (currentPage - 1) * itemsPerPage;
     const paginatedData = filteredSiswa.slice(startIdx, startIdx + itemsPerPage);
 
-    // Render Tabel dengan Icon Sorting
     const getIcon = (col) => sortCol === col ? (sortAsc ? ' <i class="ph ph-caret-up"></i>' : ' <i class="ph ph-caret-down"></i>') : ' <i class="ph ph-caret-up-down" style="opacity:0.3"></i>';
-    
     let html = `<table><tr>
         <th class="sortable" onclick="handleSort('nis')">NIS${getIcon('nis')}</th>
         <th class="sortable" onclick="handleSort('nama')">Nama Lengkap${getIcon('nama')}</th>
@@ -273,25 +243,63 @@ function renderTableSiswa(filter = '') {
     for(let p=1; p<=totalPages; p++) { pageHtml += `<button class="btn ${p === currentPage ? '' : 'secondary'}" style="padding: 5px 12px; font-size: 13px;" onclick="goToPage(${p})">${p}</button>`; }
     if (pageControls) pageControls.innerHTML = pageHtml;
 }
-
 window.goToPage = function(pageNumber) { currentPage = pageNumber; if (searchInput) renderTableSiswa(searchInput.value); };
 
 // ==========================================
-// FITUR 2: SCANNER & PENCEGAH DOUBLE SCAN 
+// FITUR 2: MULTI-CAMERA & FULLSCREEN KIOSK
 // ==========================================
 const video = document.getElementById('scanner-video'); const canvasElement = document.getElementById('scan-canvas');
 const canvas = canvasElement ? canvasElement.getContext('2d', { willReadFrequently: true }) : null;
+const cameraSelect = document.getElementById('camera-select');
+const btnFullscreen = document.getElementById('btn-fullscreen');
+
+// Mendapatkan daftar kamera TANPA menyalakan kamera secara otomatis
+async function initCameras() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
+        cameraSelect.innerHTML = '<option value="">Kamera tidak didukung</option>'; return;
+    }
+    try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        availableCameras = devices.filter(device => device.kind === 'videoinput');
+        
+        cameraSelect.innerHTML = '';
+        if (availableCameras.length === 0) { cameraSelect.innerHTML = '<option value="">Kamera tidak ditemukan</option>'; return; }
+        
+        availableCameras.forEach((cam, index) => {
+            const option = document.createElement('option');
+            option.value = cam.deviceId;
+            
+            let labelName = cam.label || `Kamera ${index + 1}`;
+            if(labelName.toLowerCase().includes('back') || labelName.toLowerCase().includes('environment')) labelName += " (Belakang)";
+            
+            option.text = labelName;
+            cameraSelect.appendChild(option);
+        });
+    } catch (e) { cameraSelect.innerHTML = '<option value="">Izin Kamera Ditolak</option>'; }
+}
 
 document.getElementById('btn-start-scan')?.addEventListener('click', mulaiKamera);
 document.getElementById('btn-stop-scan')?.addEventListener('click', stopKamera);
 
 function mulaiKamera() {
-    if(!video) return; document.getElementById('scanner-placeholder').style.display = 'none'; video.style.display = 'block'; 
+    if(!video) return; 
+    
+    const selectedDeviceId = cameraSelect.value;
+    const constraints = { video: { facingMode: "environment" } };
+    if (selectedDeviceId) constraints.video = { deviceId: { exact: selectedDeviceId } };
+
+    document.getElementById('scanner-placeholder').style.display = 'none'; video.style.display = 'block'; 
     document.getElementById('btn-start-scan').disabled = true; document.getElementById('btn-stop-scan').disabled = false;
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }).then(stream => {
-        videoStream = stream; video.srcObject = stream; video.setAttribute("playsinline", true); video.play(); scanInterval = requestAnimationFrame(tick);
-    }).catch(err => { showToast('Kamera tidak diizinkan/ditemukan.', 'error'); stopKamera(); });
+    btnFullscreen.style.display = 'block';
+
+    navigator.mediaDevices.getUserMedia(constraints).then(stream => {
+        videoStream = stream; video.srcObject = stream; video.setAttribute("playsinline", true); video.play(); 
+        scanInterval = requestAnimationFrame(tick);
+        
+        initCameras();
+    }).catch(err => { showToast('Kamera gagal diakses atau belum diberi izin.', 'error'); stopKamera(); });
 }
+
 
 function stopKamera() {
     if (videoStream) { videoStream.getTracks().forEach(track => track.stop()); videoStream = null; }
@@ -299,6 +307,28 @@ function stopKamera() {
     const p = document.getElementById('scanner-placeholder'); if(p) p.style.display = 'block';
     const btnStart = document.getElementById('btn-start-scan'); if(btnStart) btnStart.disabled = false; 
     const btnStop = document.getElementById('btn-stop-scan'); if(btnStop) btnStop.disabled = true;
+    
+    btnFullscreen.style.display = 'none';
+    keluarFullscreen(); // Keluar mode kiosk otomatis
+}
+
+// Logika Fullscreen Kiosk Mode
+btnFullscreen?.addEventListener('click', () => {
+    const box = document.getElementById('scanner-box');
+    if (box.classList.contains('fullscreen')) keluarFullscreen();
+    else {
+        box.classList.add('fullscreen');
+        btnFullscreen.innerHTML = '<i class="ph ph-corners-in"></i>';
+        if (box.requestFullscreen) box.requestFullscreen();
+        else if (box.webkitRequestFullscreen) box.webkitRequestFullscreen();
+    }
+});
+
+function keluarFullscreen() {
+    const box = document.getElementById('scanner-box');
+    box.classList.remove('fullscreen');
+    btnFullscreen.innerHTML = '<i class="ph ph-corners-out"></i>';
+    if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen();
 }
 
 function tick() {
@@ -311,7 +341,7 @@ function tick() {
             const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" });
             if (code) { 
                 if (code.data.startsWith("SOFTAPP-QR:")) { const actualNis = code.data.replace("SOFTAPP-QR:", ""); catatAbsen(actualNis, 'Hadir'); } 
-                else { playBeep(true); showToast('QR Code Ditolak! Bukan kartu resmi.', 'error'); }
+                else { playBeep(true); showToast('Bukan Kartu Resmi!', 'error'); }
                 setTimeout(() => { requestAnimationFrame(tick); }, 2500); return; 
             }
         }
@@ -385,8 +415,7 @@ function renderTrendChart() {
     if(!ctx || typeof Chart === 'undefined') return;
     
     const isDark = document.body.classList.contains('dark-theme');
-    const gridColor = isDark ? '#334155' : '#e2e8f0';
-    const textColor = isDark ? '#94a3b8' : '#64748b';
+    const gridColor = isDark ? '#334155' : '#e2e8f0'; const textColor = isDark ? '#94a3b8' : '#64748b';
 
     let availableDates = Object.keys(dataAbsen).sort(); let last7Dates = availableDates.slice(-7);
     if (last7Dates.length === 0 && dateInput) last7Dates = [dateInput.value];
@@ -397,22 +426,16 @@ function renderTrendChart() {
         const absenHarian = dataAbsen[tgl] || []; dataHadir.push(absenHarian.filter(a => a.status === 'Hadir').length);
     });
     
-    if (myChart) { myChart.destroy(); } // Hancurkan & buat ulang agar warna tema terupdate
+    if (myChart) { myChart.destroy(); } 
     myChart = new Chart(ctx.getContext('2d'), {
         type: 'line', 
         data: { labels: labels, datasets: [{ label: 'Hadir', data: dataHadir, borderColor: '#4f46e5', backgroundColor: 'rgba(79, 70, 229, 0.1)', borderWidth: 3, fill: true, tension: 0.4, pointBackgroundColor: '#4f46e5', pointRadius: 5 }] },
-        options: { 
-            responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, 
-            scales: { 
-                y: { beginAtZero: true, suggestedMax: dataSiswa.length || 10, ticks: { stepSize: 1, color: textColor }, grid: { color: gridColor } },
-                x: { ticks: { color: textColor }, grid: { display: false } }
-            } 
-        }
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, suggestedMax: dataSiswa.length || 10, ticks: { stepSize: 1, color: textColor }, grid: { color: gridColor } }, x: { ticks: { color: textColor }, grid: { display: false } } } }
     });
 }
 
 // ==========================================
-// FITUR 3: EXPORT & CETAK QR CODE
+// FITUR 3: EXPORT NATIVE EXCEL (.XLSX) & PDF
 // ==========================================
 document.getElementById('btn-export-pdf')?.addEventListener('click', () => {
     if (typeof window.jspdf === 'undefined') return showToast("Sistem PDF masih dimuat...", "warning");
@@ -427,22 +450,110 @@ document.getElementById('btn-export-pdf')?.addEventListener('click', () => {
     doc.save(`Laporan_Harian_${dateInput.value}.pdf`); showToast("Berhasil mengunduh PDF!", "success");
 });
 
-document.getElementById('btn-export-csv')?.addEventListener('click', () => {
-    if (dataSiswa.length === 0) return showToast('Belum ada data siswa.', 'error'); if (!dateInput) return;
-    const sd = new Date(dateInput.value); const year = sd.getFullYear(); const month = sd.getMonth(); const daysInMonth = new Date(year, month + 1, 0).getDate();
-    let csvContent = `Rekapitulasi Kehadiran Siswa\nNo;NIS;Nama Lengkap;Kelas`; for (let i = 1; i <= daysInMonth; i++) csvContent += `;${i}`; csvContent += `;Hadir;Sakit;Izin;Alpa\n`;
-    [...dataSiswa].sort((a,b)=>a.nama.localeCompare(b.nama)).forEach((siswa, idx) => {
-        let row = `${idx + 1};="${siswa.nis}";"${siswa.nama}";"${siswa.kelas}"`; let total = { H: 0, S: 0, I: 0, A: 0 };
-        for (let d = 1; d <= daysInMonth; d++) {
-            const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-            const rec = (dataAbsen[dateKey] || []).find(a => a.nis === siswa.nis);
-            let mark = ''; if (rec) { mark = rec.status === 'Hadir' ? 'H' : (rec.status === 'Sakit' ? 'S' : (rec.status === 'Izin' ? 'I' : 'A')); total[mark]++; }
-            row += `;${mark}`;
-        }
-        csvContent += `${row};${total.H};${total.S};${total.I};${total.A}\n`;
-    });
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' }); const link = document.createElement("a"); link.href = URL.createObjectURL(blob);
-    link.download = `Rekap_Absensi_${year}_${month+1}.csv`; document.body.appendChild(link); link.click(); document.body.removeChild(link);
+// BARU: Ekspor menggunakan ExcelJS (Standar Enterprise dengan Warna & Styling Rapi)
+document.getElementById('btn-export-excel')?.addEventListener('click', async () => {
+    if (typeof ExcelJS === 'undefined') return showToast("Sistem Excel masih dimuat, tunggu sebentar.", "warning");
+    if (dataSiswa.length === 0) return showToast('Belum ada data siswa.', 'error');
+    if (!dateInput) return;
+    
+    setLoading(true); // Munculkan layar loading sebentar
+    
+    try {
+        const sd = new Date(dateInput.value); 
+        const year = sd.getFullYear(); 
+        const month = sd.getMonth(); 
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const namaBulan = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"][month];
+
+        // Buat File Excel Kosong
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet(`Rekap ${namaBulan} ${year}`, {
+            views: [{ state: 'frozen', xSplit: 4, ySplit: 1 }] // KUNCI: Freeze baris pertama & 4 kolom pertama
+        });
+
+        // 1. Buat Baris Header
+        let header = ["No", "NIS", "Nama Lengkap", "Kelas"];
+        for (let i = 1; i <= daysInMonth; i++) header.push(i);
+        header.push("H", "S", "I", "A");
+        const headerRow = worksheet.addRow(header);
+
+        // Styling Baris Header (Tebal, Tengah, Warna Abu-abu)
+        headerRow.eachCell((cell) => {
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFCBD5E1' } }; 
+            cell.font = { bold: true, color: { argb: 'FF0F172A' } };
+            cell.alignment = { vertical: 'middle', horizontal: 'center' };
+            cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
+        });
+
+        // Sesuaikan Lebar Kolom Biar Sangat Rapi
+        worksheet.getColumn(1).width = 5;  
+        worksheet.getColumn(2).width = 15; 
+        worksheet.getColumn(3).width = 30; 
+        worksheet.getColumn(4).width = 10; 
+        for(let i=1; i<=daysInMonth; i++) worksheet.getColumn(4+i).width = 4;
+        worksheet.getColumn(4+daysInMonth+1).width = 5; 
+        worksheet.getColumn(4+daysInMonth+2).width = 5; 
+        worksheet.getColumn(4+daysInMonth+3).width = 5; 
+        worksheet.getColumn(4+daysInMonth+4).width = 5; 
+
+        // 2. Isi Data Murid
+        [...dataSiswa].sort((a,b)=>a.nama.localeCompare(b.nama)).forEach((siswa, idx) => {
+            let rowData = [idx + 1, siswa.nis, siswa.nama, siswa.kelas];
+            let total = { H: 0, S: 0, I: 0, A: 0 };
+            
+            for (let d = 1; d <= daysInMonth; d++) {
+                const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                const rec = (dataAbsen[dateKey] || []).find(a => a.nis === siswa.nis);
+                let mark = ''; 
+                if (rec) { 
+                    if(rec.status === 'Hadir') { mark = 'H'; total.H++; }
+                    else if(rec.status === 'Sakit') { mark = 'S'; total.S++; }
+                    else if(rec.status === 'Izin') { mark = 'I'; total.I++; }
+                    else { mark = 'A'; total.A++; }
+                }
+                rowData.push(mark);
+            }
+            rowData.push(total.H, total.S, total.I, total.A);
+            
+            const addedRow = worksheet.addRow(rowData);
+
+            // Styling Baris Data & Warna Cell Berdasarkan Status
+            addedRow.eachCell((cell, colNum) => {
+                cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
+                cell.alignment = { vertical: 'middle' };
+                
+                if(colNum > 4) { // Pengecekan Khusus Area Tanggal & Total
+                    cell.alignment = { vertical: 'middle', horizontal: 'center' };
+                    // Warnai kotak kehadiran sesuai hurufnya
+                    if (cell.value === 'H') cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD1FAE5' } }; 
+                    if (cell.value === 'S' || cell.value === 'I') cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFEF3C7' } }; 
+                    if (cell.value === 'A') cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFEE2E2' } }; 
+                }
+            });
+
+            // Warnai tebal pada kolom Rekap Total di ujung kanan
+            addedRow.getCell(4+daysInMonth+1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD1FAE5' } };
+            addedRow.getCell(4+daysInMonth+1).font = { bold: true };
+            addedRow.getCell(4+daysInMonth+2).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFEF3C7' } };
+            addedRow.getCell(4+daysInMonth+2).font = { bold: true };
+            addedRow.getCell(4+daysInMonth+3).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFEF3C7' } };
+            addedRow.getCell(4+daysInMonth+3).font = { bold: true };
+            addedRow.getCell(4+daysInMonth+4).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFEE2E2' } };
+            addedRow.getCell(4+daysInMonth+4).font = { bold: true };
+        });
+
+        // 3. Render Simpan ke Format File Excel Asli (.xlsx)
+        const buffer = await workbook.xlsx.writeBuffer();
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        saveAs(blob, `Rekap_Absensi_${namaBulan}_${year}.xlsx`);
+        showToast("File Excel Asli Berhasil Diunduh!", "success");
+        
+    } catch (e) {
+        console.error("Gagal export Excel:", e);
+        showToast("Gagal memproses file Excel", "error");
+    } finally {
+        setLoading(false);
+    }
 });
 
 // ==========================================
