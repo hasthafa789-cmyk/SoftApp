@@ -554,7 +554,15 @@ document.getElementById('btn-manual-simpan')?.addEventListener('click', () => {
 
 async function catatAbsen(nis, status, isManual = false) {
     const siswa = dataSiswa.find(s => s.nis === nis);
-    if (!siswa) { if (!isManual) { playBeep(true); showToast('QR Code tidak dikenali!', 'error'); } return; }
+    if (!siswa) { 
+        if (!isManual) { 
+            playBeep(true); showToast('QR Code tidak dikenali!', 'error'); 
+            // Pemicu Kilat Merah
+            const flash = document.getElementById('scanner-flash');
+            if(flash) { flash.className = 'error'; setTimeout(() => flash.className = '', 250); }
+        } 
+        return; 
+    }
 
     const tgl = dateInput?.value || new Date().toISOString().split('T')[0];
     if (!isManual && dataAbsen[tgl]) {
@@ -580,7 +588,17 @@ async function catatAbsen(nis, status, isManual = false) {
     dataAbsen[tgl].push({ nis: siswa.nis, nama: siswa.nama, kelas: siswa.kelas, waktu: waktuSekarang, status: finalStatus });
     
     renderAbsensi(); if(selectSiswaManual) selectSiswaManual.value = '';
-    if (!isManual) { playBeep(false); showToast(`${siswa.nama} ditandai: ${finalStatus}`, finalStatus === 'Terlambat' ? 'warning' : 'success'); }
+    if (!isManual) { 
+        playBeep(false); 
+        showToast(`${siswa.nama} ditandai: ${finalStatus}`, finalStatus === 'Terlambat' ? 'warning' : 'success'); 
+        
+        // Pemicu Kilat Hijau / Kuning
+        const flash = document.getElementById('scanner-flash');
+        if(flash) { 
+            flash.className = finalStatus === 'Terlambat' ? 'warning' : 'success'; 
+            setTimeout(() => flash.className = '', 250); 
+        }
+    }
 }
 
 dateInput?.addEventListener('change', renderAbsensi);
@@ -703,8 +721,14 @@ function renderTrendChart() {
         const absenHarian = dataAbsen[tgl] || []; dataHadir.push(absenHarian.filter(a => a.status === 'Hadir').length);
     });
     
+    // KODE BARU: Membuat Gradien Mewah
+    let ctx2d = ctx.getContext('2d');
+    let gradient = ctx2d.createLinearGradient(0, 0, 0, 70); // 70 adalah tinggi kanvas
+    gradient.addColorStop(0, isDark ? 'rgba(255, 255, 255, 0.4)' : 'rgba(23, 23, 23, 0.3)'); // Atas pekat
+    gradient.addColorStop(1, isDark ? 'rgba(255, 255, 255, 0)' : 'rgba(23, 23, 23, 0)');     // Bawah transparan/menghilang
+
     if (myChart) { myChart.destroy(); } 
-    myChart = new Chart(ctx.getContext('2d'), {
+    myChart = new Chart(ctx2d, {
         type: 'line', 
         data: { 
             labels: labels, 
@@ -712,14 +736,16 @@ function renderTrendChart() {
                 label: 'Hadir', 
                 data: dataHadir, 
                 borderColor: lineColor, 
-                backgroundColor: bgFill, 
+                backgroundColor: gradient, // <-- Menggunakan gradien yang baru dibuat
                 borderWidth: 3, 
                 fill: true, 
-                tension: 0.4, 
+                tension: 0.4, // Membuat garis melengkung empuk (Bezier)
                 pointBackgroundColor: lineColor, 
-                pointRadius: 5 
+                pointRadius: 4,
+                pointHoverRadius: 6 // Membesar saat disentuh
             }] 
         },
+        
         options: { 
             responsive: true, maintainAspectRatio: false, 
             plugins: { legend: { display: false } }, 
