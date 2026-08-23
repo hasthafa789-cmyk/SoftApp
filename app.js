@@ -80,7 +80,7 @@ document.getElementById('btn-login')?.addEventListener('click', () => {
         document.querySelector('[data-tab="kartu"]').style.display = 'none';
         
         document.querySelector('[data-tab="absensi"]').click();
-        showToast(`${sapaan}, Guru! Akses Terbatas.`, 'info');
+        showToast(`${sapaan}, Guru!`, 'info');
     } 
     else {
         playBeep(true);
@@ -501,7 +501,7 @@ async function catatAbsen(nis, status, isManual = false) {
 
     // Gunakan format standar Internasional (HH:mm) agar valid di semua HP
     const waktuSekarang = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-    const batasJam = document.getElementById('input-batas-jam')?.value || '07:15';
+    const batasJam = document.getElementById('input-batas-jam')?.value || '12:00';
     
     // KECERDASAN BUATAN: Auto-Deteksi Terlambat
     let finalStatus = status;

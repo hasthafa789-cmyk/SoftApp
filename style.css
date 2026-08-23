@@ -635,7 +635,7 @@ input[type="checkbox"] {
     .id-header { background: #000 !important; color: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .id-body { background: #fff !important; }
     .insight-card { display: none !important; } 
-}
+
 
 /* =========================================================
    PAPAN ANALITIK (EARLY WARNING SYSTEM)
