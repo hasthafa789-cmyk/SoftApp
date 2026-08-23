@@ -136,23 +136,53 @@
             <div id="pagination-controls" style="display: flex; justify-content: center; gap: 10px; margin-top: 25px;"></div>
         </section>
 
-        <!-- TAB: KARTU QR -->
+        <!-- TAB: KARTU QR (ID CARD STUDIO) -->
         <section id="tab-kartu" class="tab-panel">
-            <div class="panel-header">
+            <div class="panel-header" style="margin-bottom: 15px;">
                 <div>
-                    <h2 class="panel-title">Cetak Kartu Identitas</h2>
-                    <p class="panel-hint">Gunakan kertas A4 untuk hasil cetak yang optimal.</p>
+                    <h2 class="panel-title">ID Card Studio</h2>
+                    <p class="panel-hint">Desain dan cetak kartu PVC standar (Ukuran KTP/ATM).</p>
                 </div>
-                <button class="btn" id="btn-print-kartu"><i class="ph ph-printer"></i> Cetak Kartu</button>
+                <button class="btn" id="btn-print-kartu"><i class="ph ph-printer"></i> Cetak Massal</button>
             </div>
+            
+            <!-- Pengaturan Desain Kartu -->
+            <div class="form-row">
+                <div class="field">
+                    <label>Nama Sekolah / Instansi</label>
+                    <input type="text" id="input-sekolah" value="SDIT Ibnu Taimiyah" onkeyup="renderKartu()">
+                </div>
+                <div class="field">
+                    <label>Tahun Ajaran / Slogan</label>
+                    <input type="text" id="input-slogan" value="Tahun Ajaran 2026/2027" onkeyup="renderKartu()">
+                </div>
+            </div>
+
             <div id="cards-grid-wrap" class="cards-grid"></div>
         </section>
 
         <!-- TAB: ABSENSI -->
         <section id="tab-absensi" class="tab-panel">
-            <div class="field" style="margin-top: 10px; flex-direction: row; align-items: center; gap: 10px; flex-wrap: wrap;">
-    <label for="input-tanggal-absensi" style="margin:0;">Pilih Tanggal:</label>
-    <input type="date" id="input-tanggal-absensi">
+            <!-- HEADER YANG SEMPAT HILANG -->
+            <div class="panel-header">
+                <div>
+                    <h2 class="panel-title">Monitor Absensi</h2>
+                    <div class="field" style="margin-top: 10px; flex-direction: row; align-items: center; gap: 10px; flex-wrap: wrap;">
+                        <label for="input-tanggal-absensi" style="margin:0;">Pilih Tanggal:</label>
+                        <input type="date" id="input-tanggal-absensi">
+                        
+                        <label for="input-batas-jam" style="margin:0; margin-left: 10px;">Batas Terlambat:</label>
+                        <input type="time" id="input-batas-jam" value="07:15">
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <button class="btn warning" id="btn-export-pdf"><i class="ph ph-file-pdf"></i> Ekspor PDF</button>
+                    <button class="btn success" id="btn-export-excel" style="background-color: #10b981; color: white; border:none;"><i class="ph ph-file-xls"></i> Ekspor Excel</button>
+                </div>
+            </div>
+            <!-- BATAS HEADER -->
+
+            <div class="stats-grid" id="stats-dashboard">
     
     <!-- BARU: Pengaturan Jam Otomatis Terlambat -->
     <label for="input-batas-jam" style="margin:0; margin-left: 10px;">Batas Terlambat:</label>
@@ -168,6 +198,18 @@
             
             <div class="chart-container" style="background: var(--bg-card); padding: 20px; border-radius: 14px; border: 1px solid var(--border); margin-bottom: 30px; box-shadow: var(--shadow-sm);">
                 <canvas id="attendanceChart" height="70"></canvas>
+            </div>
+
+            <!-- SISTEM PERINGATAN DINI (EWS) & LEADERBOARD -->
+            <div id="insight-dashboard" class="scan-layout" style="gap: 20px; margin-bottom: 30px; display: none;">
+                <div class="insight-card" style="border-top: 4px solid var(--success);">
+                    <h3 class="insight-title"><i class="ph ph-trophy" style="color: var(--success); font-size: 24px;"></i> Siswa Terajin Bulan Ini</h3>
+                    <ul class="insight-list" id="list-leaderboard"></ul>
+                </div>
+                <div class="insight-card" style="border-top: 4px solid var(--danger);">
+                    <h3 class="insight-title"><i class="ph ph-warning-octagon" style="color: var(--danger); font-size: 24px;"></i> Zona Merah (Rawan)</h3>
+                    <ul class="insight-list" id="list-redzone"></ul>
+                </div>
             </div>
 
             <div class="scan-layout">

@@ -383,7 +383,7 @@ table { border: none; } /* Hindari border ganda karena sudah di-wrap */
    PERBAIKAN CETAK (PRINT) A4 SUPER RAPI
    ========================================= */
 @media print {
-    @page { size: A4; margin: 1.5cm; }
+    @page { size: A4; margin: 0.5cm; }
     .masthead, .tabs, .panel-header, #tab-siswa, #tab-absensi, 
     .header-actions, #toast, #loading-overlay, #pin-modal, #network-status { display: none !important; }
     body, #app, main { background: transparent !important; padding: 0 !important; margin: 0 !important; box-shadow: none !important; border: none !important; max-width: 100% !important; width: 100% !important; overflow: visible !important; }
@@ -589,3 +589,60 @@ input[type="checkbox"] {
 /* 5. Khusus untuk Ikon Sukses/Gagal agar lebih membaur */
 .swal2-icon.swal2-success [class^="swal2-success-line"] { background-color: var(--text-main) !important; }
 .swal2-icon.swal2-success .swal2-success-ring { border-color: var(--border) !important; }
+
+/* =========================================================
+   ID CARD STUDIO (STANDAR KARTU PVC / KTP)
+   ========================================================= */
+.id-card-pvc {
+    width: 210px; height: 330px; /* Rasio mendekati 54x86mm (CR80) */
+    background: white; border: 1px solid var(--border); border-radius: 12px;
+    display: flex; flex-direction: column; overflow: hidden; position: relative;
+    box-shadow: var(--shadow-sm); transition: transform 0.3s; margin: 0 auto;
+}
+.id-card-pvc:hover { transform: translateY(-5px); box-shadow: var(--shadow-md); }
+.id-header {
+    background: var(--primary); color: var(--bg-card);
+    padding: 15px 10px; text-align: center;
+}
+.id-header h4 { font-size: 14px; font-weight: 700; margin-bottom: 2px; text-transform: uppercase; }
+.id-header p { font-size: 10px; opacity: 0.8; margin: 0; }
+.id-body {
+    padding: 20px; flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; background: white;
+}
+.id-name { font-size: 16px; font-weight: 700; text-align: center; margin-top: 15px; color: var(--text-main); line-height: 1.2; }
+.id-nis { font-size: 12px; color: var(--text-muted); text-align: center; margin-top: 5px; font-weight: 600; }
+.id-footer { background: #f8fafc; padding: 10px; text-align: center; font-size: 10px; color: var(--text-muted); border-top: 1px solid var(--border); font-weight: 600;}
+
+/* Perbaikan Saat Cetak ID Card */
+@media print {
+    /* MENGHILANGKAN KOTAK INPUT DARI KERTAS CETAK */
+    .form-row { display: none !important; }
+    
+    /* UBAH DARI 4 KOLOM MENJADI 3 KOLOM AGAR MUAT DI KERTAS A4 */
+    .cards-grid { grid-template-columns: repeat(3, 1fr) !important; gap: 5px !important; }
+    
+    .id-card-pvc { border: 1px dashed #94a3b8 !important; box-shadow: none !important; break-inside: avoid; margin: 0 auto; }
+    .id-header { background: #000 !important; color: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .id-body { background: #fff !important; }
+    .insight-card { display: none !important; } 
+}
+
+    /* UBAH DARI 4 KOLOM MENJADI 3 KOLOM AGAR MUAT DI KERTAS A4 */
+    .cards-grid { grid-template-columns: repeat(3, 1fr) !important; gap: 15px !important; }
+    
+    .id-card-pvc { border: 1px dashed #94a3b8 !important; box-shadow: none !important; break-inside: avoid; margin: 0 auto; }
+    .id-header { background: #000 !important; color: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .id-body { background: #fff !important; }
+    .insight-card { display: none !important; } 
+}
+
+/* =========================================================
+   PAPAN ANALITIK (EARLY WARNING SYSTEM)
+   ========================================================= */
+.insight-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; box-shadow: var(--shadow-sm); }
+.insight-title { font-size: 16px; font-weight: 700; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; color: var(--text-main); }
+.insight-list { list-style: none; padding: 0; margin: 0; }
+.insight-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px dashed var(--border); font-size: 14px; align-items: center; }
+.insight-item:last-child { border-bottom: none; }
+.insight-item strong { color: var(--text-main); }

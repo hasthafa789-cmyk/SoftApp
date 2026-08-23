@@ -47,6 +47,9 @@ let availableCameras = [];
 // SISTEM LOGIN & MULTI-ROLE
 // ==========================================
 let currentRole = null;
+// Variabel High-Speed Scanner
+let lastScannedNIS = '';
+let lastScanTime = 0;
 
 // Fungsi Sapaan Berdasarkan Waktu
 function dapatkanSapaan() {
@@ -195,12 +198,15 @@ async function syncDataLokalDenganCloud() {
 }
 
 function updateUI() { 
-    updateDropdownKelas(); // Update daftar kelas di dropdown
+    updateDropdownKelas();
     if (searchInput) renderTableSiswa(searchInput.value); 
     renderKartu(); 
     renderAbsensi(); 
     updateSelectManual(); 
+    cekKalenderPintar();
+    renderAnalitik(); // <--- BARIS INI PENTING DITAMBAHKAN
 }
+
 function updateDropdownKelas() {
     if (!filterKelasInput) return;
 
@@ -445,17 +451,32 @@ function keluarFullscreen() {
 }
 
 function tick() {
-    if (video && canvas && video.readyState === video.HAVE_ENOUGH_DATA) {
-        canvasElement.height = video.videoHeight; canvasElement.width = video.videoWidth;
+    if (!videoStream || video.readyState !== video.HAVE_ENOUGH_DATA) {
+        scanInterval = requestAnimationFrame(tick);
+        return;
+    }
+    
+    if (canvasElement) {
+        canvasElement.height = video.videoHeight;
+        canvasElement.width = video.videoWidth;
         canvas.drawImage(video, 0, 0, canvasElement.width, canvasElement.height);
-        const imageData = canvas.getImageData(0, 0, canvasElement.width, canvasElement.height);
         
-        if (typeof jsQR !== 'undefined') {
-            const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" });
-            if (code) { 
-                if (code.data.startsWith("SOFTAPP-QR:")) { const actualNis = code.data.replace("SOFTAPP-QR:", ""); catatAbsen(actualNis, 'Hadir'); } 
-                else { playBeep(true); showToast('Bukan Kartu Resmi!', 'error'); }
-                setTimeout(() => { requestAnimationFrame(tick); }, 2500); return; 
+        const imageData = canvas.getImageData(0, 0, canvasElement.width, canvasElement.height);
+        const code = jsQR(imageData.data, imageData.width, imageData.height, {
+            inversionAttempts: "dontInvert",
+        });
+
+        if (code) {
+            const nis = code.data;
+            const now = Date.now();
+            
+            // HIGH-SPEED ALGORITHM
+            if (nis === lastScannedNIS && (now - lastScanTime) < 3000) {
+                // Abaikan jika QR yang sama ditahan di depan kamera (Anti-Spam 3 detik)
+            } else {
+                lastScannedNIS = nis;
+                lastScanTime = now;
+                catatAbsen(nis, 'Hadir'); 
             }
         }
     }
@@ -548,6 +569,24 @@ function renderAbsensi() {
     renderTrendChart();
 }
 
+function cekKalenderPintar() {
+    const tglInput = document.getElementById('input-tanggal-absensi').value;
+    const tgl = tglInput ? new Date(tglInput) : new Date();
+    const hari = tgl.getDay(); // 0 = Minggu, 6 = Sabtu
+    const isLibur = (hari === 0 || hari === 6);
+
+    const btnScan = document.getElementById('btn-start-scan');
+    const ph = document.getElementById('scanner-placeholder');
+    
+    if (isLibur) {
+        if(btnScan) btnScan.disabled = true;
+        if(ph) ph.innerHTML = '<i class="ph ph-calendar-x" style="font-size: 40px; color: var(--danger); margin-bottom: 10px;"></i><br><span style="color:var(--danger); font-weight:bold;">Hari Libur!</span><br>Absensi Dinonaktifkan.';
+    } else {
+        if(btnScan) btnScan.disabled = false;
+        if(ph) ph.innerHTML = '<i class="ph ph-camera-slash" style="font-size: 40px; margin-bottom: 10px;"></i><br>Kamera tidak aktif';
+    }
+}
+
 function renderTrendChart() {
     const ctx = document.getElementById('attendanceChart');
     if(!ctx || typeof Chart === 'undefined') return;
@@ -598,20 +637,48 @@ function renderTrendChart() {
     });
 }
 
-// ==========================================
-// FITUR 3: EXPORT NATIVE EXCEL (.XLSX) & PDF
-// ==========================================
 document.getElementById('btn-export-pdf')?.addEventListener('click', () => {
     if (typeof window.jspdf === 'undefined') return showToast("Sistem PDF masih dimuat...", "warning");
     if (!dateInput || !dataAbsen[dateInput.value] || dataAbsen[dateInput.value].length === 0) return showToast("Tidak ada data", "error");
     
-    const { jsPDF } = window.jspdf; const doc = new jsPDF();
+    const { jsPDF } = window.jspdf; 
+    
+    // PERBAIKAN 1: Ubah kertas menjadi 'l' (Landscape / Mendatar)
+    const doc = new jsPDF('l', 'mm', 'a4');
+    
     doc.setFont("helvetica", "bold"); doc.setFontSize(16); doc.text("Laporan Kehadiran Harian", 14, 20);
     doc.setFont("helvetica", "normal"); doc.setFontSize(11); doc.text(`Tanggal: ${dateInput.value}`, 14, 28);
     
-    const tableData = []; dataAbsen[dateInput.value].forEach((a, index) => { tableData.push([index + 1, a.waktu, a.nis, a.nama, a.kelas, a.status]); });
-    doc.autoTable({ startY: 35, head: [['No', 'Waktu', 'NIS', 'Nama Lengkap', 'Kelas', 'Status']], body: tableData, headStyles: { fillColor: [79, 70, 229] }, theme: 'grid' });
-    doc.save(`Laporan_Harian_${dateInput.value}.pdf`); showToast("Berhasil mengunduh PDF!", "success");
+    const tableData = []; 
+    dataAbsen[dateInput.value].forEach((a, index) => { 
+        tableData.push([index + 1, a.waktu, a.nis, a.nama, a.kelas, a.status]); 
+    });
+    
+    doc.autoTable({ 
+        startY: 35, 
+        head: [['No', 'Waktu', 'NIS', 'Nama Lengkap', 'Kelas', 'Status']], 
+        body: tableData, 
+        
+        // PERBAIKAN 2: Desain Monokrom & Teks Anti-Potong
+        headStyles: { fillColor: [23, 23, 23] }, // Warna Hitam Pekat
+        styles: { 
+            fontSize: 10, 
+            cellPadding: 4, 
+            overflow: 'linebreak' // Memaksa teks panjang turun ke bawah
+        },
+        columnStyles: {
+            0: { cellWidth: 15, halign: 'center' }, // No
+            1: { cellWidth: 25, halign: 'center' }, // Waktu
+            2: { cellWidth: 40 },                   // NIS
+            3: { cellWidth: 'auto' },               // Nama Lengkap (Otomatis mengisi ruang kosong)
+            4: { cellWidth: 35, halign: 'center' }, // Kelas
+            5: { cellWidth: 35, halign: 'center' }  // Status
+        },
+        theme: 'grid' 
+    });
+    
+    doc.save(`Laporan_Harian_${dateInput.value}.pdf`); 
+    showToast("Berhasil mengunduh PDF!", "success");
 });
 
 // BARU: Ekspor menggunakan ExcelJS (Standar Enterprise dengan Warna & Styling Rapi)
@@ -739,18 +806,39 @@ function updateSelectManual() {
     [...dataSiswa].sort((a,b)=>a.nama.localeCompare(b.nama)).forEach(s => selectSiswaManual.innerHTML += `<option value="${s.nis}">${s.nama} (${s.kelas})</option>`);
 }
 
-function renderKartu() {
-    const wrap = document.getElementById('cards-grid-wrap'); if(!wrap) return; wrap.innerHTML = '';
-    if (dataSiswa.length === 0) return wrap.innerHTML = '<div class="empty-state">Belum ada siswa.</div>';
+window.renderKartu = function() {
+    const wrap = document.getElementById('cards-grid-wrap');
+    if (!wrap) return;
+    if (dataSiswa.length === 0) {
+        wrap.innerHTML = '<div class="empty-state" style="grid-column: 1/-1;">Belum ada data siswa untuk dicetak.</div>';
+        return;
+    }
+
+    const namaSekolah = document.getElementById('input-sekolah')?.value || 'NAMA INSTANSI';
+    const slogan = document.getElementById('input-slogan')?.value || 'Kartu Identitas Resmi';
+
+    let html = '';
     dataSiswa.forEach(s => {
-        const card = document.createElement('div'); card.className = 'qr-card';
-        const safeId = `qr-${String(s.nis).replace(/[^a-zA-Z0-9]/g, '')}`;
-        card.innerHTML = `<div class="qr-code" id="${safeId}"></div><h3>${s.nama}</h3><p>${s.kelas} &bull; ${s.nis}</p>`;
-        wrap.appendChild(card); 
-        try { if(typeof QRCode !== 'undefined') { setTimeout(() => { const el = document.getElementById(safeId); if(el) { el.innerHTML = ''; new QRCode(el, { text: "SOFTAPP-QR:" + s.nis, width: 140, height: 140, colorDark: "#0f172a", correctLevel: QRCode.CorrectLevel.L }); } }, 50); }
-        } catch (error) { console.error("Gagal cetak QR Code:", error); }
+        html += `
+        <div class="id-card-pvc">
+            <div class="id-header">
+                <h4>${namaSekolah}</h4>
+                <p>${slogan}</p>
+            </div>
+            <div class="id-body">
+                <div id="qr-${s.nis}" class="qr-code"></div>
+                <div class="id-name">${s.nama}</div>
+                <div class="id-nis">NIS: ${s.nis} &nbsp;|&nbsp; KELAS: ${s.kelas}</div>
+            </div>
+        </div>`;
+    });
+    wrap.innerHTML = html;
+
+    dataSiswa.forEach(s => {
+        new QRCode(document.getElementById(`qr-${s.nis}`), { text: s.nis, width: 120, height: 120, colorDark: "#171717", colorLight: "#ffffff", correctLevel: QRCode.CorrectLevel.H });
     });
 }
+
 document.getElementById('btn-print-kartu')?.addEventListener('click', () => window.print());
 
 document.getElementById('btn-import-csv')?.addEventListener('click', () => document.getElementById('file-import')?.click());
@@ -828,3 +916,39 @@ formSiswaInputs.forEach(id => {
         }
     });
 });
+
+window.renderAnalitik = function() {
+    const dashboard = document.getElementById('insight-dashboard');
+    if(!dashboard || dataSiswa.length === 0) return;
+    
+    // Aktifkan Dashboard jika sedang di Mode Admin
+    dashboard.style.display = currentRole === 'guru' ? 'none' : 'flex';
+
+    let rekap = dataSiswa.map(s => ({ nis: s.nis, nama: s.nama, kelas: s.kelas, hadir: 0, masalah: 0 }));
+
+    // Hitung seluruh riwayat database
+    Object.values(dataAbsen).forEach(absensiHarian => {
+        absensiHarian.forEach(absen => {
+            let siswa = rekap.find(r => r.nis === absen.nis);
+            if(siswa) {
+                if(absen.status === 'Hadir') siswa.hadir++;
+                else if(absen.status === 'Sakit' || absen.status === 'Izin' || absen.status === 'Alpa' || absen.status === 'Terlambat') siswa.masalah++;
+            }
+        });
+    });
+
+    // 🏆 Top 5 Rajin (Hadir terbanyak, Masalah terkecil)
+    let rajin = [...rekap].sort((a,b) => b.hadir - a.hadir || a.masalah - b.masalah).slice(0, 5);
+    let htmlRajin = '';
+    rajin.forEach(r => htmlRajin += `<li class="insight-item"><div><strong>${r.nama}</strong><br><span style="font-size:11px; color:var(--text-muted);">${r.kelas}</span></div> <span class="badge Hadir">${r.hadir} Hadir</span></li>`);
+    document.getElementById('list-leaderboard').innerHTML = htmlRajin || '<li class="insight-item">Belum ada data.</li>';
+
+    // ⚠️ Zona Merah (Masalah terbanyak >= 3)
+    let rawan = [...rekap].filter(r => r.masalah >= 3).sort((a,b) => b.masalah - a.masalah).slice(0, 5);
+    let htmlRawan = '';
+    rawan.forEach(r => htmlRawan += `<li class="insight-item"><div><strong>${r.nama}</strong><br><span style="font-size:11px; color:var(--text-muted);">${r.kelas}</span></div> <span class="badge Alpa" style="background:var(--danger); color:white;">${r.masalah} Peringatan</span></li>`);
+    document.getElementById('list-redzone').innerHTML = htmlRawan || '<li class="insight-item" style="color:var(--success);">Aman. Tidak ada siswa bermasalah.</li>';
+}
+
+// Tambahkan pemanggilan fungsi ini di dalam fungsi updateUI()
+// renderAnalitik();
