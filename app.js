@@ -1,88 +1,113 @@
-// --- STATE MANAGEMENT ---
+// ==========================================
+// STATE MANAGEMENT & GLOBAL VARIABLES
+// ==========================================
 let dataSiswa = JSON.parse(localStorage.getItem('siswa_pro')) || [];
 let dataAbsen = JSON.parse(localStorage.getItem('absensi_pro')) || {};
 let videoStream = null;
 let scanInterval = null;
+let editModeNIS = null;
+
+let currentPage = 1;
+const itemsPerPage = 10;
+let searchTimeout;
+let myChart = null; 
 
 // MASUKKAN URL GOOGLE APPS SCRIPT ANDA DI SINI
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwT5NHezF5f9v0eXVpSRAN2X241vcIuCq1tqZCoycqEvQm-MrWQBBzcGlv7O54PUrI2lw/exec';
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwSKGIEkB8ucclW0_BNDM_zUXVpDyRew1saJ4MxV4kQhOA-gY8BfKdO_s6Smfogox7Iiw/exec';
 
-const beepSound = new Audio('data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU'+Array(100).join('123'));
-
+// ==========================================
+// INISIALISASI & API UTILS
+// ==========================================
 const dateInput = document.getElementById('input-tanggal-absensi');
 const selectSiswaManual = document.getElementById('manual-select-siswa');
+const searchInput = document.getElementById('search-siswa');
 
-// Tombol Toggle Tabel
-const btnSudah = document.getElementById('show-sudah');
-const btnBelum = document.getElementById('show-belum');
-const wrapSudah = document.getElementById('attendance-table-wrap');
-const wrapBelum = document.getElementById('belum-table-wrap');
-
-// --- INISIALISASI ---
 document.addEventListener('DOMContentLoaded', () => {
-    dateInput.valueAsDate = new Date();
-    updateUI();
-    
-    // Tarik Siswa DAN Absensi Harian dari Google Sheets
-    if (GOOGLE_SCRIPT_URL) {
-        showToast('Sinkronisasi Cloud berjalan...', 'success');
-        fetch(GOOGLE_SCRIPT_URL)
-            .then(response => response.json())
-            .then(dataCloud => {
-                if(dataCloud) {
-                    if (dataCloud.siswa && dataCloud.siswa.length > 0) {
-                        dataSiswa = dataCloud.siswa;
-                    }
-                    if (dataCloud.absensi && Object.keys(dataCloud.absensi).length > 0) {
-                        dataAbsen = dataCloud.absensi;
-                    }
-                    simpanData(); // Simpan ke localStorage sebagai backup offline
-                    updateUI();   // Refresh tampilan tabel
-                    showToast('Data tersinkronisasi 100%!', 'success');
-                }
-            })
-            .catch(error => {
-                showToast('Koneksi lambat/offline. Menggunakan data lokal.', 'warning');
-            });
-    }
+    try {
+        const today = new Date();
+        if (dateInput) {
+            dateInput.value = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+        }
+        updateUI();
+        if (GOOGLE_SCRIPT_URL) syncDataLokalDenganCloud();
+    } catch (e) { console.error("Error Inisialisasi: ", e); }
 });
 
-// --- MANAJEMEN DATA SISWA ---
-document.getElementById('btn-tambah-siswa').addEventListener('click', () => {
-    const nis = document.getElementById('input-nis').value.trim();
-    const nama = document.getElementById('input-nama').value.trim();
-    const kelas = document.getElementById('input-kelas').value.trim();
+function playBeep(isError = false) {
+    try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator(); const gain = ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.type = isError ? 'sawtooth' : 'sine'; 
+        osc.frequency.setValueAtTime(isError ? 300 : 800, ctx.currentTime);
+        gain.gain.setValueAtTime(0.1, ctx.currentTime);
+        osc.start(); osc.stop(ctx.currentTime + (isError ? 0.3 : 0.1));
+    } catch(e) {} 
+}
 
-    if (!nis || !nama || !kelas) return showToast('Harap isi NIS, Nama, dan Kelas!', 'danger');
-    if (dataSiswa.some(s => s.nis === nis)) return showToast('NIS sudah terdaftar!', 'danger');
+function setLoading(isLoading) { 
+    const overlay = document.getElementById('loading-overlay');
+    if (overlay) overlay.classList.toggle('active', isLoading); 
+}
 
-    dataSiswa.push({ nis, nama, kelas });
-    simpanData();
-    updateUI();
-    
-    document.getElementById('input-nis').value = '';
-    document.getElementById('input-nama').value = '';
-    document.getElementById('input-kelas').value = '';
-    showToast('Siswa berhasil ditambahkan.', 'success');
-
-    // --- FITUR BARU: KIRIM KE GOOGLE SPREADSHEET (BACKGROUND) ---
-    if (GOOGLE_SCRIPT_URL) {
-        const formData = new URLSearchParams();
-        formData.append('aksi', 'absen');
-        formData.append('tanggal', tgl);
-        formData.append('waktu', waktuSekarang); // Pastikan ini ada
-        formData.append('nis', siswa.nis);
-        formData.append('nama', siswa.nama);
-        formData.append('kelas', siswa.kelas);
-        formData.append('status', status);
-
-        fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: formData })
-          .catch(error => console.error('Gagal kirim ke Sheet'));
+// PERBAIKAN: Kompatibilitas untuk script lama maupun baru
+async function fetchToCloud(formData) {
+    if (!GOOGLE_SCRIPT_URL) return { success: false, message: "URL Script tidak disetel." };
+    try {
+        setLoading(true);
+        const response = await fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: formData });
+        const textResult = await response.text(); 
+        setLoading(false);
+        
+        try {
+            return JSON.parse(textResult); // Script Baru (JSON)
+        } catch (e) {
+            return { success: true, message: textResult }; // Script Lama (Teks Biasa)
+        }
+    } catch (error) {
+        setLoading(false);
+        return { success: false, message: "Offline_Mode" };
     }
-});
+}
+
+// PERBAIKAN: Anti-Wipe (Tidak akan menghapus data jika cloud kosong)
+async function syncDataLokalDenganCloud() {
+    setLoading(true);
+    try {
+        const response = await fetch(GOOGLE_SCRIPT_URL);
+        const textData = await response.text();
+        
+        let dataCloud;
+        try { dataCloud = JSON.parse(textData); } catch (e) { throw new Error("Respons bukan JSON"); }
+        
+        if (dataCloud) {
+            let adaUpdate = false;
+            // Hanya timpa data jika array dari cloud memiliki isi
+            if (dataCloud.siswa && dataCloud.siswa.length > 0) {
+                dataSiswa = dataCloud.siswa;
+                adaUpdate = true;
+            }
+            if (dataCloud.absensi && Object.keys(dataCloud.absensi).length > 0) {
+                dataAbsen = dataCloud.absensi;
+                adaUpdate = true;
+            }
+            
+            simpanData(); updateUI();
+            
+            if (adaUpdate) {
+                showToast('Data berhasil disinkronkan dari Cloud!', 'success');
+            } else {
+                showToast('Terhubung ke Cloud (Data di Server masih kosong).', 'success');
+            }
+        }
+    } catch (error) { 
+        showToast('Mode Lokal (Anda sedang offline atau URL bermasalah).', 'warning'); 
+    }
+    finally { setLoading(false); }
+}
 
 function updateUI() {
-    renderTableSiswa();
+    if (searchInput) renderTableSiswa(searchInput.value);
     renderKartu();
     renderAbsensi();
     updateSelectManual();
@@ -93,354 +118,490 @@ function simpanData() {
     localStorage.setItem('absensi_pro', JSON.stringify(dataAbsen));
 }
 
-// --- NAVIGASI TAB ---
-document.querySelectorAll('.tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-        document.querySelectorAll('.tab, .tab-panel').forEach(el => el.classList.remove('active'));
-        tab.classList.add('active');
-        document.getElementById(`tab-${tab.dataset.tab}`).classList.add('active');
-        if (tab.dataset.tab !== 'absensi') stopKamera();
+// ==========================================
+// FITUR 1: MANAJEMEN SISWA
+// ==========================================
+document.getElementById('btn-tambah-siswa')?.addEventListener('click', async () => {
+    const nis = document.getElementById('input-nis')?.value.trim();
+    const nama = document.getElementById('input-nama')?.value.trim();
+    const kelas = document.getElementById('input-kelas')?.value.trim();
+    if (!nis || !nama || !kelas) return showToast('Lengkapi seluruh data!', 'warning');
+    
+    let formData = new URLSearchParams({ nis, nama, kelas });
+
+    if (editModeNIS) { 
+        formData.append('aksi', 'edit_siswa');
+        formData.append('nis_lama', editModeNIS);
+        promptPIN(async (pin) => {
+            formData.append('pin', pin);
+            const res = await fetchToCloud(formData);
+            
+            if (res.success || res.message.includes("Berhasil")) {
+                const index = dataSiswa.findIndex(s => s.nis === editModeNIS);
+                if (index !== -1) {
+                    dataSiswa[index] = { nis, nama, kelas };
+                    simpanData(); updateUI(); batalEdit();
+                    showToast('Data siswa berhasil diedit!', 'success');
+                }
+            } else { showToast(res.message, 'danger'); }
+        });
+    } else { 
+        if (dataSiswa.some(s => s.nis === nis)) return showToast('NIS sudah ada!', 'danger');
+        formData.append('aksi', 'tambah_siswa');
+        
+        const res = await fetchToCloud(formData);
+        if(res.success || res.message === "Offline_Mode") { 
+            dataSiswa.push({ nis, nama, kelas });
+            showToast(res.success ? 'Siswa berhasil ditambahkan.' : 'Tersimpan ke Penyimpanan Lokal.', res.success ? 'success' : 'warning');
+            document.getElementById('input-nis').value = ''; document.getElementById('input-nama').value = ''; document.getElementById('input-kelas').value = '';
+            simpanData(); updateUI();
+        } else {
+            showToast(res.message, 'danger');
+        }
+    }
+});
+
+window.editSiswa = function(nis) {
+    const siswa = dataSiswa.find(s => s.nis === nis);
+    if (!siswa) return;
+    document.getElementById('input-nis').value = siswa.nis;
+    document.getElementById('input-nama').value = siswa.nama;
+    document.getElementById('input-kelas').value = siswa.kelas;
+    editModeNIS = nis;
+    const btnSimpan = document.getElementById('btn-tambah-siswa');
+    if (btnSimpan) { btnSimpan.innerHTML = '<i class="ph ph-floppy-disk"></i> Update Data'; btnSimpan.classList.add('warning'); }
+    document.getElementById('btn-batal-edit').style.display = 'flex';
+}
+
+function batalEdit() {
+    editModeNIS = null;
+    document.getElementById('input-nis').value = ''; document.getElementById('input-nama').value = ''; document.getElementById('input-kelas').value = '';
+    const btnSimpan = document.getElementById('btn-tambah-siswa');
+    if (btnSimpan) { btnSimpan.innerHTML = '<i class="ph ph-plus"></i> Simpan'; btnSimpan.classList.remove('warning'); }
+    const btnBatal = document.getElementById('btn-batal-edit');
+    if(btnBatal) btnBatal.style.display = 'none';
+}
+document.getElementById('btn-batal-edit')?.addEventListener('click', batalEdit);
+
+window.hapusSiswa = function(nis) {
+    promptPIN(async (pin) => {
+        let formData = new URLSearchParams({ aksi: 'hapus_siswa', nis, pin });
+        const res = await fetchToCloud(formData);
+        if (res.success || res.message.includes("Berhasil")) {
+            dataSiswa = dataSiswa.filter(s => s.nis !== nis);
+            simpanData(); updateUI(); showToast('Siswa berhasil dihapus.', 'success');
+        } else { showToast(res.message, 'danger'); }
+    });
+}
+
+document.getElementById('btn-hapus-semua')?.addEventListener('click', () => {
+    promptPIN(async (pin) => {
+        let formData = new URLSearchParams({ aksi: 'hapus_semua', pin });
+        const res = await fetchToCloud(formData);
+        if (res.success || res.message.includes("Dihapus")) {
+            dataSiswa = []; simpanData(); updateUI(); showToast('Semua data di-reset.', 'success');
+        } else { showToast(res.message, 'danger'); }
     });
 });
 
-// --- TOGGLE TABEL ABSENSI ---
-btnSudah.addEventListener('click', () => {
-    btnSudah.classList.add('active'); btnBelum.classList.remove('active');
-    wrapSudah.style.display = 'block'; wrapBelum.style.display = 'none';
+searchInput?.addEventListener('input', (e) => {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+        currentPage = 1; 
+        renderTableSiswa(e.target.value);
+    }, 300);
 });
 
-btnBelum.addEventListener('click', () => {
-    btnBelum.classList.add('active'); btnSudah.classList.remove('active');
-    wrapSudah.style.display = 'none'; wrapBelum.style.display = 'block';
-});
-
-// --- MANAJEMEN DATA SISWA ---
-document.getElementById('btn-tambah-siswa').addEventListener('click', () => {
-    const nis = document.getElementById('input-nis').value.trim();
-    const nama = document.getElementById('input-nama').value.trim();
-    const kelas = document.getElementById('input-kelas').value.trim();
-
-    if (!nis || !nama || !kelas) return showToast('Harap isi NIS, Nama, dan Kelas!', 'danger');
-    if (dataSiswa.some(s => s.nis === nis)) return showToast('NIS sudah terdaftar!', 'danger');
-
-    dataSiswa.push({ nis, nama, kelas });
-    simpanData(); updateUI();
-    
-    document.getElementById('input-nis').value = '';
-    document.getElementById('input-nama').value = '';
-    document.getElementById('input-kelas').value = '';
-    showToast('Siswa berhasil ditambahkan.', 'success');
-});
-
-function hapusSiswa(nis) {
-    if (confirm('Hapus data siswa ini beserta riwayat absensinya?')) {
-        dataSiswa = dataSiswa.filter(s => s.nis !== nis);
-        simpanData(); updateUI();
-    }
-}
-
-document.getElementById('btn-hapus-semua').addEventListener('click', () => {
-    if (confirm('PERINGATAN: Yakin ingin menghapus SEMUA data siswa?')) {
-        dataSiswa = []; simpanData(); updateUI();
-    }
-});
-
-function renderTableSiswa() {
+function renderTableSiswa(filter = '') {
     const wrap = document.getElementById('siswa-table-wrap');
+    const pageControls = document.getElementById('pagination-controls');
+    if (!wrap) return;
+    
     if (dataSiswa.length === 0) {
-        wrap.innerHTML = '<div class="empty-state"><i class="ph ph-users" style="font-size:40px; margin-bottom:10px;"></i><br>Belum ada data siswa.</div>'; return;
+        wrap.innerHTML = '<div class="empty-state"><i class="ph ph-users" style="font-size:40px;"></i><br>Belum ada data siswa.</div>'; 
+        if (pageControls) pageControls.innerHTML = ''; return;
     }
 
-    let html = `<table><tr><th>NIS</th><th>Nama Lengkap</th><th>Kelas</th><th style="width:80px;">Aksi</th></tr>`;
-    dataSiswa.forEach(s => {
+    const keyword = filter.toLowerCase();
+    const filteredSiswa = dataSiswa.filter(s => s.nama.toLowerCase().includes(keyword) || s.nis.toLowerCase().includes(keyword));
+
+    if (filteredSiswa.length === 0) { wrap.innerHTML = '<div class="empty-state">Siswa tidak ditemukan.</div>'; if (pageControls) pageControls.innerHTML = ''; return; }
+
+    const totalPages = Math.ceil(filteredSiswa.length / itemsPerPage);
+    const startIdx = (currentPage - 1) * itemsPerPage;
+    const paginatedData = filteredSiswa.slice(startIdx, startIdx + itemsPerPage);
+
+    let html = `<table><tr><th>NIS</th><th>Nama Lengkap</th><th>Kelas</th><th style="width:120px;">Aksi</th></tr>`;
+    paginatedData.forEach(s => {
         html += `<tr><td><strong>${s.nis}</strong></td><td>${s.nama}</td><td>${s.kelas}</td>
-        <td><button class="btn danger" style="padding: 6px 12px;" onclick="hapusSiswa('${s.nis}')"><i class="ph ph-trash"></i></button></td></tr>`;
+        <td><div style="display:flex; gap:8px;">
+            <button class="btn warning" style="padding:6px 10px;" onclick="editSiswa('${s.nis}')"><i class="ph ph-pencil-simple"></i></button>
+            <button class="btn danger" style="padding:6px 10px;" onclick="hapusSiswa('${s.nis}')"><i class="ph ph-trash"></i></button>
+        </div></td></tr>`;
     });
     wrap.innerHTML = html + '</table>';
+
+    let pageHtml = '';
+    for(let p=1; p<=totalPages; p++) {
+        pageHtml += `<button class="btn ${p === currentPage ? '' : 'secondary'}" style="padding: 5px 12px; font-size: 13px;" onclick="goToPage(${p})">${p}</button>`;
+    }
+    if (pageControls) pageControls.innerHTML = pageHtml;
 }
 
-function updateSelectManual() {
-    selectSiswaManual.innerHTML = '<option value="">Pilih Siswa...</option>';
-    const sortedSiswa = [...dataSiswa].sort((a, b) => a.nama.localeCompare(b.nama));
-    sortedSiswa.forEach(s => { selectSiswaManual.innerHTML += `<option value="${s.nis}">${s.nama} (${s.kelas})</option>`; });
-}
+window.goToPage = function(pageNumber) {
+    currentPage = pageNumber;
+    if (searchInput) renderTableSiswa(searchInput.value);
+};
 
-// --- IMPOR CSV ---
-document.getElementById('btn-import-csv').addEventListener('click', () => document.getElementById('file-import').click());
-document.getElementById('file-import').addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-        const lines = event.target.result.split('\n');
-        let count = 0;
-        for (let i = 1; i < lines.length; i++) {
-            const cols = lines[i].split(',');
-            if (cols.length >= 3) {
-                const nis = cols[0].trim(); const nama = cols[1].trim(); const kelas = cols[2].trim();
-                if (nis && !dataSiswa.some(s => s.nis === nis)) { dataSiswa.push({ nis, nama, kelas }); count++; }
-            }
-        }
-        simpanData(); updateUI();
-        showToast(`Berhasil mengimpor ${count} siswa baru.`, 'success');
-        e.target.value = '';
-    };
-    reader.readAsText(file);
-});
-
-// --- KARTU QR ---
-function renderKartu() {
-    const wrap = document.getElementById('cards-grid-wrap'); wrap.innerHTML = '';
-    if (dataSiswa.length === 0) { wrap.innerHTML = '<div class="empty-state">Tambahkan data siswa untuk melihat kartu.</div>'; return; }
-    
-    dataSiswa.forEach(s => {
-        const card = document.createElement('div'); card.className = 'qr-card';
-        card.innerHTML = `<div class="qr-code" id="qr-${s.nis}"></div><h3>${s.nama}</h3><p>${s.kelas} &bull; ${s.nis}</p>`;
-        wrap.appendChild(card);
-        new QRCode(document.getElementById(`qr-${s.nis}`), { text: s.nis, width: 140, height: 140, colorDark: "#0f172a" });
-    });
-}
-document.getElementById('btn-print-kartu').addEventListener('click', () => window.print());
-
-// --- ABSENSI & SCANNER ---
+// ==========================================
+// FITUR 2: SCANNER & PENCEGAH DOUBLE SCAN 
+// ==========================================
 const video = document.getElementById('scanner-video');
 const canvasElement = document.getElementById('scan-canvas');
-const canvas = canvasElement.getContext('2d');
+const canvas = canvasElement ? canvasElement.getContext('2d', { willReadFrequently: true }) : null;
 
-document.getElementById('btn-start-scan').addEventListener('click', mulaiKamera);
-document.getElementById('btn-stop-scan').addEventListener('click', stopKamera);
+document.getElementById('btn-start-scan')?.addEventListener('click', mulaiKamera);
+document.getElementById('btn-stop-scan')?.addEventListener('click', stopKamera);
 
 function mulaiKamera() {
+    if(!video) return;
     document.getElementById('scanner-placeholder').style.display = 'none';
-    video.style.display = 'block';
-    document.getElementById('btn-start-scan').disabled = true;
-    document.getElementById('btn-stop-scan').disabled = false;
-
+    video.style.display = 'block'; 
+    document.getElementById('btn-start-scan').disabled = true; document.getElementById('btn-stop-scan').disabled = false;
     navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }).then(stream => {
-        videoStream = stream; video.srcObject = stream;
-        video.setAttribute("playsinline", true); video.play();
+        videoStream = stream; video.srcObject = stream; video.setAttribute("playsinline", true); video.play();
         scanInterval = requestAnimationFrame(tick);
-    }).catch(err => {
-        showToast('Kamera tidak diizinkan atau tidak ditemukan.', 'danger'); stopKamera();
-    });
+    }).catch(err => { showToast('Kamera tidak diizinkan/ditemukan.', 'danger'); stopKamera(); });
 }
 
 function stopKamera() {
     if (videoStream) { videoStream.getTracks().forEach(track => track.stop()); videoStream = null; }
-    cancelAnimationFrame(scanInterval);
-    video.style.display = 'none'; document.getElementById('scanner-placeholder').style.display = 'block';
-    document.getElementById('btn-start-scan').disabled = false; document.getElementById('btn-stop-scan').disabled = true;
+    cancelAnimationFrame(scanInterval); 
+    if(video) video.style.display = 'none'; 
+    const p = document.getElementById('scanner-placeholder'); if(p) p.style.display = 'block';
+    const btnStart = document.getElementById('btn-start-scan'); if(btnStart) btnStart.disabled = false; 
+    const btnStop = document.getElementById('btn-stop-scan'); if(btnStop) btnStop.disabled = true;
 }
 
 function tick() {
-    if (video.readyState === video.HAVE_ENOUGH_DATA) {
+    if (video && canvas && video.readyState === video.HAVE_ENOUGH_DATA) {
         canvasElement.height = video.videoHeight; canvasElement.width = video.videoWidth;
         canvas.drawImage(video, 0, 0, canvasElement.width, canvasElement.height);
         const imageData = canvas.getImageData(0, 0, canvasElement.width, canvasElement.height);
-        const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" });
         
-        if (code) { catatAbsen(code.data, 'Hadir'); setTimeout(() => { requestAnimationFrame(tick); }, 2000); return; }
+        if (typeof jsQR !== 'undefined') {
+            const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" });
+            
+            if (code) { 
+                // Deteksi keamanan
+                if (code.data.startsWith("SOFTAPP-QR:")) {
+                    const actualNis = code.data.replace("SOFTAPP-QR:", "");
+                    catatAbsen(actualNis, 'Hadir'); 
+                } else {
+                    playBeep(true); 
+                    showToast('QR Code Ditolak! Bukan kartu resmi.', 'danger');
+                }
+                setTimeout(() => { requestAnimationFrame(tick); }, 2500); 
+                return; 
+            }
+        }
     }
     scanInterval = requestAnimationFrame(tick);
 }
 
-document.getElementById('btn-manual-simpan').addEventListener('click', () => {
-    const nis = selectSiswaManual.value;
-    const status = document.getElementById('manual-select-status').value;
+document.getElementById('btn-manual-simpan')?.addEventListener('click', () => {
+    const nis = selectSiswaManual?.value; const status = document.getElementById('manual-select-status')?.value;
     if (!nis) return showToast('Pilih siswa terlebih dahulu!', 'danger');
     catatAbsen(nis, status, true);
 });
 
-function catatAbsen(nis, status, isManual = false) {
+async function catatAbsen(nis, status, isManual = false) {
     const siswa = dataSiswa.find(s => s.nis === nis);
-    if (!siswa) return isManual ? null : showToast('QR Code tidak dikenali!', 'danger');
+    if (!siswa) {
+        if (!isManual) { playBeep(true); showToast('QR Code tidak dikenali!', 'danger'); }
+        return;
+    }
 
-    const tgl = dateInput.value;
+    const tgl = dateInput?.value || new Date().toISOString().split('T')[0];
+    
+    // --- FITUR BARU: PENCEGAH DOUBLE SCAN ---
+    if (!isManual && dataAbsen[tgl]) {
+        const riwayat = dataAbsen[tgl].find(a => a.nis === nis);
+        // Jika menscan lagi dan sudah "Hadir", batalkan
+        if (riwayat && riwayat.status === 'Hadir') {
+            playBeep(true); // Nada Error
+            showToast(`Gagal: ${siswa.nama} sudah absen hari ini!`, 'warning');
+            return; // Hentikan eksekusi disini
+        }
+    }
+
     const waktuSekarang = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
     
     if (!dataAbsen[tgl]) dataAbsen[tgl] = [];
-    
     dataAbsen[tgl] = dataAbsen[tgl].filter(a => a.nis !== nis);
-    dataAbsen[tgl].push({ 
-        nis: siswa.nis, nama: siswa.nama, kelas: siswa.kelas, 
-        waktu: waktuSekarang,
-        status: status 
-    });
+    dataAbsen[tgl].push({ nis: siswa.nis, nama: siswa.nama, kelas: siswa.kelas, waktu: waktuSekarang, status: status });
     
-    simpanData();
-    if (!isManual) beepSound.play().catch(e => {});
+    simpanData(); renderAbsensi(); if(selectSiswaManual) selectSiswaManual.value = '';
+    
+    if (!isManual) playBeep(false); // Bunyi sukses
     showToast(`${siswa.nama} ditandai: ${status}`, 'success');
-    
-    renderAbsensi();
-    selectSiswaManual.value = '';
 
-    // --- FITUR BARU: KIRIM KE GOOGLE SPREADSHEET (BACKGROUND) ---
-    if (GOOGLE_SCRIPT_URL) {
-        const formData = new URLSearchParams();
-        formData.append('aksi', 'absen');
-        formData.append('tanggal', tgl);
-        formData.append('waktu', waktuSekarang);
-        formData.append('nis', siswa.nis);
-        formData.append('nama', siswa.nama);
-        formData.append('kelas', siswa.kelas);
-        formData.append('status', status);
-
-        // Kirim data tanpa mengganggu kecepatan web
-        fetch(GOOGLE_SCRIPT_URL, {
-            method: 'POST',
-            body: formData
-        }).then(response => console.log('Data terkirim ke Google Sheets'))
-          .catch(error => console.error('Koneksi internet bermasalah, gagal kirim ke Sheet'));
-    }
+    let formData = new URLSearchParams({ aksi: 'absen', tanggal: tgl, waktu: waktuSekarang, nis: siswa.nis, nama: siswa.nama, kelas: siswa.kelas, status: status });
+    fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: formData }).catch(e => console.log('Sinkronisasi tertunda (Offline)'));
 }
 
-dateInput.addEventListener('change', renderAbsensi);
+dateInput?.addEventListener('change', renderAbsensi);
 
 function renderAbsensi() {
+    if (!dateInput) return;
     const tgl = dateInput.value; const absenHariIni = dataAbsen[tgl] || []; const totalSiswa = dataSiswa.length;
-
-    let htmlSudah = `<table><tr><th>Waktu</th><th>Nama</th><th>Kelas</th><th>Status</th></tr>`;
     let hadir = 0, sakitIzin = 0;
     
+    let htmlSudah = `<table><tr><th>Waktu</th><th>Nama</th><th>Kelas</th><th>Status</th></tr>`;
     [...absenHariIni].reverse().forEach(a => {
         if(a.status === 'Hadir') hadir++; if(a.status === 'Sakit' || a.status === 'Izin') sakitIzin++;
         htmlSudah += `<tr><td>${a.waktu}</td><td><strong>${a.nama}</strong></td><td>${a.kelas}</td><td><span class="badge ${a.status}">${a.status}</span></td></tr>`;
     });
-    wrapSudah.innerHTML = absenHariIni.length === 0 ? '<div class="empty-state">Belum ada absensi hari ini.</div>' : htmlSudah + '</table>';
+    const wrapSudah = document.getElementById('attendance-table-wrap');
+    if(wrapSudah) wrapSudah.innerHTML = absenHariIni.length === 0 ? '<div class="empty-state">Belum ada absensi hari ini.</div>' : htmlSudah + '</table>';
 
     const sudahAbsenNIS = absenHariIni.map(a => a.nis);
     const siswaBelumAbsen = dataSiswa.filter(s => !sudahAbsenNIS.includes(s.nis));
     
     let htmlBelum = `<table><tr><th>NIS</th><th>Nama Lengkap</th><th>Kelas</th></tr>`;
     siswaBelumAbsen.forEach(s => { htmlBelum += `<tr><td>${s.nis}</td><td><strong>${s.nama}</strong></td><td>${s.kelas}</td></tr>`; });
-    wrapBelum.innerHTML = siswaBelumAbsen.length === 0 ? '<div class="empty-state">Semua siswa sudah diabsen.</div>' : htmlBelum + '</table>';
+    const wrapBelum = document.getElementById('belum-table-wrap');
+    if(wrapBelum) wrapBelum.innerHTML = siswaBelumAbsen.length === 0 ? '<div class="empty-state">Semua siswa sudah diabsen.</div>' : htmlBelum + '</table>';
 
     const absenDanAlpa = totalSiswa - hadir - sakitIzin;
+    const pcnHadir = totalSiswa ? Math.round((hadir / totalSiswa) * 100) : 0;
+    const pcnSakit = totalSiswa ? Math.round((sakitIzin / totalSiswa) * 100) : 0;
+    const pcnAlpa = totalSiswa ? Math.round((absenDanAlpa / totalSiswa) * 100) : 0;
+
     const cards = document.querySelectorAll('.stat-card h3');
-    cards[0].textContent = totalSiswa; cards[1].textContent = hadir; cards[2].textContent = sakitIzin; cards[3].textContent = absenDanAlpa;
-    document.getElementById('count-sudah').textContent = absenHariIni.length; document.getElementById('count-belum').textContent = siswaBelumAbsen.length;
-}
-
-// --- EKSPOR KE EXCEL (FORMAT RAPI DENGAN GARIS & WARNA) ---
-document.getElementById('btn-export-csv').addEventListener('click', () => {
-    if (dataSiswa.length === 0) return showToast('Belum ada data siswa untuk diekspor.', 'danger');
-
-    const selectedDate = new Date(dateInput.value);
-    const year = selectedDate.getFullYear();
-    const month = selectedDate.getMonth();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const namaBulan = selectedDate.toLocaleString('id-ID', { month: 'long' });
-
-    // 1. Membangun Struktur HTML untuk dibaca sebagai Excel
-    let htmlContent = `
-        <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
-        <head>
-            <meta charset="utf-8">
-            <style>
-                table { border-collapse: collapse; font-family: Arial, sans-serif; }
-                th, td { border: 1px solid #000000; padding: 6px 8px; white-space: nowrap; }
-                th { background-color: #e2e8f0; font-weight: bold; text-align: center; vertical-align: middle; }
-                .center { text-align: center; }
-                .left { text-align: left; }
-                .bg-hadir { background-color: #d1fae5; } /* Hijau muda */
-                .bg-izin { background-color: #fef3c7; } /* Kuning muda */
-                .bg-alpa { background-color: #fee2e2; } /* Merah muda */
-            </style>
-        </head>
-        <body>
-            <table>
-                <tr>
-                    <th colspan="${daysInMonth + 8}" style="font-size: 18px; padding: 15px; background-color: #ffffff; border: none; text-align: left;">
-                        Rekapitulasi Kehadiran Siswa - Bulan ${namaBulan} ${year}
-                    </th>
-                </tr>
-                <tr>
-                    <th rowspan="2">No</th>
-                    <th rowspan="2">NIS</th>
-                    <th rowspan="2">Nama Lengkap</th>
-                    <th rowspan="2">Kelas</th>
-                    <th colspan="${daysInMonth}">Tanggal</th>
-                    <th colspan="4">Total Kehadiran</th>
-                </tr>
-                <tr>
-    `;
-
-    // Header Tanggal
-    for (let i = 1; i <= daysInMonth; i++) {
-        htmlContent += `<th>${i}</th>`;
+    if(cards.length === 4) { 
+        cards[0].textContent = totalSiswa; 
+        cards[1].textContent = pcnHadir + '%'; 
+        cards[2].textContent = pcnSakit + '%'; 
+        cards[3].textContent = pcnAlpa + '%'; 
     }
     
-    htmlContent += `
-                    <th>H</th>
-                    <th>S</th>
-                    <th>I</th>
-                    <th>A</th>
-                </tr>
-    `;
+    const countSudah = document.getElementById('count-sudah'); if(countSudah) countSudah.textContent = absenHariIni.length; 
+    const countBelum = document.getElementById('count-belum'); if(countBelum) countBelum.textContent = siswaBelumAbsen.length;
 
-    // 2. Isi Data per Siswa
-    const sortedSiswa = [...dataSiswa].sort((a, b) => a.nama.localeCompare(b.nama));
+    renderTrendChart();
+}
+
+function renderTrendChart() {
+    const ctx = document.getElementById('attendanceChart');
+    if(!ctx || typeof Chart === 'undefined') return;
     
-    sortedSiswa.forEach((siswa, index) => {
-        htmlContent += `<tr>
-            <td class="center">${index + 1}</td>
-            <td class="center" style="mso-number-format:'\\@';">${siswa.nis}</td>
-            <td class="left">${siswa.nama}</td>
-            <td class="center">${siswa.kelas}</td>`;
-            
-        let total = { H: 0, S: 0, I: 0, A: 0 };
+    let availableDates = Object.keys(dataAbsen).sort();
+    let last7Dates = availableDates.slice(-7);
+    if (last7Dates.length === 0 && dateInput) last7Dates = [dateInput.value];
 
-        for (let d = 1; d <= daysInMonth; d++) {
-            const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-            const absenHariIni = dataAbsen[dateKey] || [];
-            const record = absenHariIni.find(a => a.nis === siswa.nis);
-            
-            let mark = '';
-            let colorClass = '';
+    const labels = [];
+    const dataHadir = [];
 
-            if (record) {
-                const s = record.status;
-                if (s === 'Hadir') { mark = 'H'; total.H++; colorClass = 'bg-hadir'; }
-                else if (s === 'Sakit') { mark = 'S'; total.S++; colorClass = 'bg-izin'; }
-                else if (s === 'Izin') { mark = 'I'; total.I++; colorClass = 'bg-izin'; }
-                else if (s === 'Alpa') { mark = 'A'; total.A++; colorClass = 'bg-alpa'; }
-            }
-            
-            htmlContent += `<td class="center ${colorClass}">${mark}</td>`;
-        }
-        
-        // Rekap Akhir Baris
-        htmlContent += `
-            <td class="center bg-hadir" style="font-weight:bold;">${total.H}</td>
-            <td class="center bg-izin" style="font-weight:bold;">${total.S}</td>
-            <td class="center bg-izin" style="font-weight:bold;">${total.I}</td>
-            <td class="center bg-alpa" style="font-weight:bold;">${total.A}</td>
-        </tr>`;
+    last7Dates.forEach(tgl => {
+        const d = new Date(tgl);
+        labels.push(`${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`);
+        const absenHarian = dataAbsen[tgl] || [];
+        const jumlahHadir = absenHarian.filter(a => a.status === 'Hadir').length;
+        dataHadir.push(jumlahHadir);
     });
+    
+    if (myChart) {
+        myChart.data.labels = labels;
+        myChart.data.datasets[0].data = dataHadir;
+        myChart.update();
+    } else {
+        myChart = new Chart(ctx.getContext('2d'), {
+            type: 'line', 
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Kehadiran Siswa',
+                    data: dataHadir,
+                    borderColor: '#4f46e5', 
+                    backgroundColor: 'rgba(79, 70, 229, 0.1)', 
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4, 
+                    pointBackgroundColor: '#4f46e5',
+                    pointRadius: 5,
+                    pointHoverRadius: 7
+                }]
+            },
+            options: { 
+                responsive: true, 
+                maintainAspectRatio: false, 
+                plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false } }, 
+                scales: { 
+                    y: { beginAtZero: true, suggestedMax: dataSiswa.length > 0 ? dataSiswa.length : 10, ticks: { stepSize: 1 } },
+                    x: { grid: { display: false } }
+                } 
+            }
+        });
+    }
+}
 
-    htmlContent += `
-            </table>
-        </body>
-        </html>
-    `;
-
-    // 3. Ekspor Menjadi File .xls (Excel Document)
-    const blob = new Blob([htmlContent], { type: 'application/vnd.ms-excel' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", `Rekap_Absensi_${namaBulan}_${year}.xls`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+// ==========================================
+// FITUR 3: EXPORT & CETAK QR CODE
+// ==========================================
+document.getElementById('btn-export-pdf')?.addEventListener('click', () => {
+    if (typeof window.jspdf === 'undefined') return showToast("Sistem PDF masih dimuat, mohon tunggu sebentar.", "warning");
+    if (!dateInput || !dataAbsen[dateInput.value] || dataAbsen[dateInput.value].length === 0) return showToast("Tidak ada data absen untuk diekspor", "danger");
+    
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    
+    doc.setFont("helvetica", "bold"); doc.setFontSize(16); doc.text("Laporan Kehadiran Harian", 14, 20);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(11); doc.text(`Tanggal: ${dateInput.value}`, 14, 28);
+    
+    const tableData = [];
+    dataAbsen[dateInput.value].forEach((a, index) => { tableData.push([index + 1, a.waktu, a.nis, a.nama, a.kelas, a.status]); });
+    
+    doc.autoTable({
+        startY: 35, head: [['No', 'Waktu', 'NIS', 'Nama Lengkap', 'Kelas', 'Status']],
+        body: tableData, headStyles: { fillColor: [79, 70, 229] }, theme: 'grid'
+    });
+    
+    doc.save(`Laporan_Harian_${dateInput.value}.pdf`);
+    showToast("Berhasil mengunduh PDF!", "success");
 });
 
-// --- TOAST UTILS ---
+document.getElementById('btn-export-csv')?.addEventListener('click', () => {
+    if (dataSiswa.length === 0) return showToast('Belum ada data siswa.', 'danger');
+    if (!dateInput) return;
+    const selectedDate = new Date(dateInput.value); const year = selectedDate.getFullYear(); const month = selectedDate.getMonth();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    let csvContent = `Rekapitulasi Kehadiran Siswa\n`;
+    let header = `No;NIS;Nama Lengkap;Kelas`;
+    for (let i = 1; i <= daysInMonth; i++) header += `;${i}`;
+    header += `;Hadir;Sakit;Izin;Alpa\n`; csvContent += header;
+
+    const sorted = [...dataSiswa].sort((a, b) => a.nama.localeCompare(b.nama));
+    sorted.forEach((siswa, idx) => {
+        let row = `${idx + 1};="${siswa.nis}";"${siswa.nama}";"${siswa.kelas}"`;
+        let total = { H: 0, S: 0, I: 0, A: 0 };
+        for (let d = 1; d <= daysInMonth; d++) {
+            const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+            const rec = (dataAbsen[dateKey] || []).find(a => a.nis === siswa.nis);
+            let mark = '';
+            if (rec) { mark = rec.status === 'Hadir' ? 'H' : (rec.status === 'Sakit' ? 'S' : (rec.status === 'Izin' ? 'I' : 'A')); total[mark]++; }
+            row += `;${mark}`;
+        }
+        row += `;${total.H};${total.S};${total.I};${total.A}\n`; csvContent += row;
+    });
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a"); link.href = URL.createObjectURL(blob);
+    link.download = `Rekap_Absensi_${year}_${month+1}.csv`; document.body.appendChild(link); link.click(); document.body.removeChild(link);
+});
+
+// ==========================================
+// TABS & UTILS
+// ==========================================
+document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab, .tab-panel').forEach(el => el.classList.remove('active'));
+        tab.classList.add('active'); 
+        const p = document.getElementById(`tab-${tab.dataset.tab}`); if(p) p.classList.add('active');
+        if (tab.dataset.tab !== 'absensi') stopKamera();
+        
+        // Anti-Gagal Render Kartu
+        if (tab.dataset.tab === 'kartu') renderKartu();
+    });
+});
+
+document.getElementById('show-sudah')?.addEventListener('click', (e) => { e.target.classList.add('active'); document.getElementById('show-belum')?.classList.remove('active'); document.getElementById('attendance-table-wrap').style.display = 'block'; document.getElementById('belum-table-wrap').style.display = 'none'; });
+document.getElementById('show-belum')?.addEventListener('click', (e) => { e.target.classList.add('active'); document.getElementById('show-sudah')?.classList.remove('active'); document.getElementById('attendance-table-wrap').style.display = 'none'; document.getElementById('belum-table-wrap').style.display = 'block'; });
+
+function updateSelectManual() {
+    if (!selectSiswaManual) return;
+    selectSiswaManual.innerHTML = '<option value="">Pilih Siswa...</option>';
+    [...dataSiswa].sort((a,b)=>a.nama.localeCompare(b.nama)).forEach(s => selectSiswaManual.innerHTML += `<option value="${s.nis}">${s.nama} (${s.kelas})</option>`);
+}
+
+function renderKartu() {
+    const wrap = document.getElementById('cards-grid-wrap'); 
+    if(!wrap) return;
+    wrap.innerHTML = '';
+    
+    if (dataSiswa.length === 0) {
+        wrap.innerHTML = '<div class="empty-state">Belum ada siswa.</div>';
+        return;
+    }
+    
+    dataSiswa.forEach(s => {
+        const card = document.createElement('div'); 
+        card.className = 'qr-card';
+        const safeId = `qr-${String(s.nis).replace(/[^a-zA-Z0-9]/g, '')}`;
+        
+        card.innerHTML = `<div class="qr-code" id="${safeId}"></div><h3>${s.nama}</h3><p>${s.kelas} &bull; ${s.nis}</p>`;
+        wrap.appendChild(card); 
+        
+        try {
+            if(typeof QRCode !== 'undefined') {
+                setTimeout(() => {
+                    const el = document.getElementById(safeId);
+                    if(el) {
+                        el.innerHTML = ''; 
+                        new QRCode(el, { 
+                            text: "SOFTAPP-QR:" + s.nis, 
+                            width: 140, 
+                            height: 140, 
+                            colorDark: "#0f172a",
+                            correctLevel: QRCode.CorrectLevel.L
+                        });
+                    }
+                }, 50);
+            }
+        } catch (error) { console.error("Gagal cetak QR Code:", error); }
+    });
+}
+document.getElementById('btn-print-kartu')?.addEventListener('click', () => window.print());
+
+document.getElementById('btn-import-csv')?.addEventListener('click', () => document.getElementById('file-import')?.click());
+document.getElementById('file-import')?.addEventListener('change', (e) => {
+    const file = e.target.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+        const lines = event.target.result.split('\n'); let count = 0; setLoading(true);
+        for (let i = 1; i < lines.length; i++) {
+            const cols = lines[i].split(/[,;]/); 
+            if (cols.length >= 3) {
+                const nis = cols[0].replace(/["']/g, '').trim(); const nama = cols[1].replace(/["']/g, '').trim(); const kelas = cols[2].replace(/["']/g, '').trim();
+                if (nis && !dataSiswa.some(s => s.nis === nis)) {
+                    dataSiswa.push({ nis, nama, kelas }); count++;
+                    await fetchToCloud(new URLSearchParams({ aksi: 'tambah_siswa', nis, nama, kelas }));
+                }
+            }
+        }
+        setLoading(false); simpanData(); updateUI(); showToast(`Berhasil mengimpor ${count} siswa.`, 'success'); e.target.value = '';
+    };
+    reader.readAsText(file);
+});
+
+// SISTEM PIN ASINKRON
+let pendingAction = null;
+const modalPin = document.getElementById('pin-modal');
+const inputPin = document.getElementById('input-pin');
+
+function promptPIN(callback) { pendingAction = callback; if(inputPin) inputPin.value = ''; if(modalPin) modalPin.classList.add('active'); if(inputPin) inputPin.focus(); }
+document.getElementById('btn-cancel-pin')?.addEventListener('click', () => { if(modalPin) modalPin.classList.remove('active'); pendingAction = null; });
+document.getElementById('btn-confirm-pin')?.addEventListener('click', () => {
+    if(!inputPin || !inputPin.value) return showToast("Masukkan PIN!", "warning");
+    if(modalPin) modalPin.classList.remove('active');
+    if (pendingAction) pendingAction(inputPin.value);
+    pendingAction = null;
+});
+inputPin?.addEventListener('keypress', (e) => { if (e.key === 'Enter') document.getElementById('btn-confirm-pin')?.click(); });
+
 function showToast(msg, type = 'success') {
     const toast = document.getElementById('toast');
-    const icon = type === 'success' ? '<i class="ph ph-check-circle"></i>' : '<i class="ph ph-warning"></i>';
-    toast.innerHTML = `${icon} ${msg}`;
-    toast.className = `show ${type}`;
-    setTimeout(() => toast.className = '', 3500);
+    if(!toast) return;
+    toast.innerHTML = (type === 'success' ? '<i class="ph ph-check-circle"></i>' : '<i class="ph ph-warning"></i>') + ` ${msg}`;
+    toast.className = `show ${type}`; setTimeout(() => toast.className = '', 3500);
 }

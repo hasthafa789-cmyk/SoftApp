@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SoftApp</title>
+    <title>SoftApp - Pro</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -12,11 +12,24 @@
     
     <link rel="stylesheet" href="style.css">
     
+    <!-- Library QR Code -->
     <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js" defer></script>
+    
+    <!-- Library Tambahan untuk Fitur Pro -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js" defer></script>
+    
+    <!-- Script Utama -->
     <script src="app.js" defer></script>
 </head>
 <body>
+
+<div id="loading-overlay" class="loading-overlay">
+    <div class="spinner"></div>
+    <p>Menyinkronkan Data...</p>
+</div>
 
 <div id="app">
     <header class="masthead">
@@ -39,7 +52,7 @@
             <div class="panel-header">
                 <div>
                     <h2 class="panel-title">Master Data Siswa</h2>
-                    <p class="panel-hint">Tambah manual atau impor massal dari file CSV.</p>
+                    <p class="panel-hint">Tambah, edit, atau cari data siswa.</p>
                 </div>
                 <div class="header-actions">
                     <input type="file" id="file-import" accept=".csv" style="display:none;">
@@ -50,21 +63,29 @@
 
             <div class="form-row">
                 <div class="field">
-                    <label>NIS / No. Induk</label>
+                    <label for="input-nis">NIS / No. Induk</label>
                     <input type="text" id="input-nis" placeholder="Contoh: 10101">
                 </div>
                 <div class="field" style="flex: 2;">
-                    <label>Nama Lengkap Siswa</label>
+                    <label for="input-nama">Nama Lengkap Siswa</label>
                     <input type="text" id="input-nama" placeholder="Contoh: Budi Santoso">
                 </div>
                 <div class="field">
-                    <label>Kelas</label>
+                    <label for="input-kelas">Kelas</label>
                     <input type="text" id="input-kelas" placeholder="Contoh: 6A">
                 </div>
-                <button class="btn" id="btn-tambah-siswa"><i class="ph ph-plus"></i> Tambah</button>
+                <button class="btn" id="btn-tambah-siswa"><i class="ph ph-plus"></i> Simpan</button>
+                <button class="btn secondary" id="btn-batal-edit" style="display: none;"><i class="ph ph-x"></i> Batal</button>
+            </div>
+
+            <div class="search-bar">
+                <i class="ph ph-magnifying-glass"></i>
+                <input type="text" id="search-siswa" placeholder="Cari berdasarkan Nama atau NIS...">
             </div>
 
             <div id="siswa-table-wrap"></div>
+            <!-- Pagination Controls (Untuk menghindari Lag) -->
+            <div id="pagination-controls" style="display: flex; justify-content: center; gap: 10px; margin-top: 25px;"></div>
         </section>
 
         <!-- TAB: KARTU QR -->
@@ -85,19 +106,26 @@
                 <div>
                     <h2 class="panel-title">Monitor Absensi</h2>
                     <div class="field" style="margin-top: 10px; flex-direction: row; align-items: center; gap: 10px;">
-                        <label style="margin:0;">Pilih Tanggal:</label>
+                        <label for="input-tanggal-absensi" style="margin:0;">Pilih Tanggal:</label>
                         <input type="date" id="input-tanggal-absensi">
                     </div>
                 </div>
-                <button class="btn secondary" id="btn-export-csv"><i class="ph ph-download-simple"></i> Ekspor Excel (CSV)</button>
+                <div class="header-actions">
+                    <button class="btn warning" id="btn-export-pdf"><i class="ph ph-file-pdf"></i> Ekspor PDF</button>
+                    <button class="btn secondary" id="btn-export-csv"><i class="ph ph-download-simple"></i> Ekspor CSV</button>
+                </div>
             </div>
 
-            <!-- Dashboard Statistik -->
             <div class="stats-grid" id="stats-dashboard">
                 <div class="stat-card"><h3>0</h3><p>Total Siswa</p></div>
                 <div class="stat-card text-success"><h3>0</h3><p>Hadir</p></div>
                 <div class="stat-card text-warning"><h3>0</h3><p>Sakit/Izin</p></div>
                 <div class="stat-card text-danger"><h3>0</h3><p>Belum Absen</p></div>
+            </div>
+            
+            <!-- Visualisasi Data Grafik -->
+            <div class="chart-container" style="background: white; padding: 20px; border-radius: 14px; border: 1px solid var(--border); margin-bottom: 30px; box-shadow: var(--shadow-sm);">
+                <canvas id="attendanceChart" height="70"></canvas>
             </div>
 
             <div class="scan-layout">
@@ -115,7 +143,6 @@
                         <button class="btn secondary" id="btn-stop-scan" disabled><i class="ph ph-stop"></i> Berhenti</button>
                     </div>
 
-                    <!-- Input Manual -->
                     <div class="manual-entry">
                         <h3>Tandai Manual</h3>
                         <div class="form-row" style="margin-bottom:0; padding:10px;">
@@ -135,7 +162,6 @@
                     </div>
                 </div>
 
-                <!-- Daftar Kehadiran & Belum Hadir -->
                 <div class="attendance-container">
                     <div class="att-header">
                         <h3>Daftar Harian</h3>
@@ -150,6 +176,19 @@
             </div>
         </section>
     </main>
+</div>
+
+<!-- Modal Keamanan PIN -->
+<div id="pin-modal" class="modal">
+    <div class="modal-content">
+        <h3>Otorisasi Dibutuhkan</h3>
+        <p>Masukkan PIN Admin untuk melanjutkan aksi ini.</p>
+        <input type="password" id="input-pin" placeholder="PIN" style="width: 100%; text-align: center; margin: 15px 0; font-size: 20px; letter-spacing: 5px;">
+        <div class="modal-actions">
+            <button class="btn secondary" id="btn-cancel-pin">Batal</button>
+            <button class="btn danger" id="btn-confirm-pin">Lanjutkan</button>
+        </div>
+    </div>
 </div>
 
 <div id="toast"></div>
