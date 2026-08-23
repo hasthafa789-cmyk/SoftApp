@@ -700,3 +700,130 @@ tbody tr:nth-child(2) { animation-delay: 0.10s; }
 tbody tr:nth-child(3) { animation-delay: 0.15s; }
 tbody tr:nth-child(4) { animation-delay: 0.20s; }
 tbody tr:nth-child(5) { animation-delay: 0.25s; }
+
+/* =========================================================
+   REVISI TOTAL DARK MODE (ULTIMATE ENTERPRISE)
+   ========================================================= */
+
+/* 1. Palet Warna Zinc (Sangat Lembut di Mata, Standar Apple/Vercel) */
+body.dark-theme {
+    --bg-main: #09090b !important;       /* Hitam Zinc (Bukan hitam pekat, sangat mewah) */
+    --bg-card: #18181b !important;       /* Sedikit lebih terang untuk menciptakan Elevasi (Kedalaman) */
+    --text-main: #ededed !important;     /* Putih redup, mencegah silau (Astigmatism) pada mata */
+    --text-muted: #a1a1aa !important;    /* Abu-abu silver untuk teks sekunder */
+    --border: #27272a !important;        /* Garis batas yang menyatu mulus dengan background */
+    
+    --primary: #ededed !important;       /* Tombol utama putih redup */
+    --primary-hover: #ffffff !important; 
+    --primary-light: #27272a !important; 
+    
+    /* MENGHILANGKAN "Noda Bayangan" - Shadow di mode gelap harus lebih pekat */
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.8) !important;
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.8) !important;
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.8) !important;
+}
+
+/* 2. Menghaluskan Input, Form & Tombol */
+body.dark-theme input, 
+body.dark-theme select,
+body.dark-theme .search-bar input {
+    background: #09090b !important;      
+    color: var(--text-main) !important;
+    border: 1px solid var(--border) !important;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.5) !important; /* Efek cekung ke dalam */
+}
+body.dark-theme input:focus, 
+body.dark-theme select:focus {
+    border-color: #52525b !important; /* Border menyala lembut (silver) saat diketik */
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.05) !important;
+}
+body.dark-theme .btn { color: #09090b !important; font-weight: 700 !important; }
+
+/* 3. Menghaluskan Tabel agar Rapi dan Tidak Mencolok */
+body.dark-theme table th { 
+    background: #09090b !important; 
+    color: var(--text-muted) !important; 
+    border-bottom: 2px solid var(--border) !important;
+}
+body.dark-theme tr:hover td { 
+    background: #18181b !important; 
+}
+body.dark-theme th.sortable:hover { 
+    background-color: #18181b !important; 
+    color: #ffffff !important; 
+}
+body.dark-theme .empty-state { 
+    background: #09090b !important; 
+    border: 1px dashed var(--border) !important; 
+}
+
+/* 4. Glassmorphism yang Benar-Benar Menyatu dengan Mode Gelap */
+body.dark-theme .masthead {
+    background: rgba(9, 9, 11, 0.8) !important;
+    border-bottom: 1px solid var(--border) !important;
+}
+@media (max-width: 768px) {
+    body.dark-theme .tabs {
+        background: rgba(24, 24, 27, 0.9) !important;
+        border-top: 1px solid var(--border) !important;
+    }
+}
+
+/* 5. ID Card Studio Tahan Banting (Tetap Terang Untuk Keperluan Print) */
+body.dark-theme .qr-card,
+body.dark-theme .id-card-pvc { background: #ffffff !important; color: #171717 !important; border-color: #e5e5e5 !important; }
+body.dark-theme .id-header { background: #171717 !important; color: #ffffff !important; }
+body.dark-theme .id-body { background: #ffffff !important; }
+body.dark-theme .id-name { color: #171717 !important; }
+body.dark-theme .id-nis { color: #737373 !important; }
+body.dark-theme .id-footer { background: #f8fafc !important; color: #737373 !important; border-top: 1px solid #e5e5e5 !important;}
+
+/* =========================================================
+   PERBAIKAN RESPONSIVITAS MOBILE PWA (ANTI-TERPOTONG)
+   ========================================================= */
+@media (max-width: 768px) {
+    /* 1. Kunci Ketat Pondasi Utama agar seukuran Layar HP */
+    body, html { max-width: 100vw; overflow-x: hidden !important; }
+    #app { max-width: 100vw; border-radius: 0; margin: 0; border: none; }
+    main { padding: 15px; padding-bottom: 90px !important; max-width: 100vw; box-sizing: border-box; overflow-x: hidden; }
+    
+    /* 2. Pastikan Tab dan Panel tidak menabrak batas layar */
+    .tab-panel { max-width: 100%; overflow-x: hidden; box-sizing: border-box; }
+    .panel-header { width: 100%; }
+    
+    /* 3. KUNCI UTAMA: Paksa tabel agar bisa digeser (scroll) secara mandiri */
+    #siswa-table-wrap, #attendance-table-wrap, #belum-table-wrap {
+        width: 100%;
+        max-width: calc(100vw - 30px); /* Layar HP dikurangi padding kiri-kanan */
+        display: block !important; 
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+        white-space: nowrap; /* Mencegah teks berantakan, biarkan memanjang ke samping */
+        border: 1px solid var(--border);
+        border-radius: 8px;
+    }
+    
+    /* 4. Rapikan Susunan Input Tanggal & Jam di Tab Absensi */
+    .field[style*="flex-direction: row"] {
+        flex-direction: column !important; /* Susun ke bawah */
+        align-items: stretch !important;
+        gap: 8px !important;
+    }
+    .field[style*="flex-direction: row"] label { margin-left: 0 !important; }
+    
+    /* 5. Rapikan Tombol PDF & Excel agar memenuhi lebar layar HP */
+    .header-actions { flex-direction: column; width: 100%; }
+    .header-actions .btn { width: 100%; justify-content: center; margin-bottom: 5px; }
+    
+    /* 6. Rapikan Panel Aksi Massal (Bulk Action) */
+    #bulk-panel { flex-direction: column !important; align-items: stretch !important; }
+    #bulk-panel .btn { width: 100%; margin-top: 5px; }
+    
+    /* 7. Rapikan Layout Kamera Scanner */
+    .scan-layout { display: flex; flex-direction: column; width: 100%; max-width: 100%; }
+    .scanner-container { width: 100%; max-width: 100%; }
+    .scanner-box { width: 100%; max-width: 100%; aspect-ratio: 4/3; }
+    
+    /* 8. Sesuaikan Lebar Pencarian Data Siswa */
+    .search-bar, #filter-kelas { width: 100%; min-width: unset !important; }
+}
