@@ -79,7 +79,7 @@ document.getElementById('btn-login')?.addEventListener('click', () => {
         setTimeout(() => loginScreen.style.display = 'none', 500);
         showToast(`${sapaan}, Admin!`, 'success');
     } 
-    else if (pin === '0000') {
+    else if (pin === '1945') {
         currentRole = 'guru';
         loginScreen.style.opacity = '0';
         setTimeout(() => loginScreen.style.display = 'none', 500);
@@ -90,6 +90,50 @@ document.getElementById('btn-login')?.addEventListener('click', () => {
         document.querySelector('[data-tab="absensi"]').click();
         showToast(`${sapaan}, Guru!`, 'info');
     } 
+    // ==========================================
+    // BARU: KIOSK MODE (MESIN ABSEN MANDIRI)
+    // ==========================================
+    // ==========================================
+    // KIOSK MODE (MESIN ABSEN MANDIRI SISWA)
+    // ==========================================
+    else if (pin === '1111') {
+        currentRole = 'siswa';
+        loginScreen.style.opacity = '0';
+        setTimeout(() => loginScreen.style.display = 'none', 500);
+        
+        // 1. Sembunyikan Tab Master Data & Cetak Kartu
+        document.querySelector('[data-tab="siswa"]').style.display = 'none';
+        document.querySelector('[data-tab="kartu"]').style.display = 'none';
+        
+        // 2. Pindah ke Tab Absensi
+        document.querySelector('[data-tab="absensi"]').click();
+        
+        // 3. KUNCI Tanggal dan Batas Jam (Hanya bisa dilihat, tidak bisa diubah)
+        const tglInput = document.getElementById('input-tanggal-absensi');
+        const jamInput = document.getElementById('input-batas-jam');
+        if(tglInput) tglInput.disabled = true;
+        if(jamInput) jamInput.disabled = true;
+        
+        // 4. Sembunyikan Tombol Ekspor PDF & Excel
+        const headerActions = document.querySelector('#tab-absensi .header-actions');
+        if(headerActions) headerActions.style.display = 'none';
+        
+        // 5. Sembunyikan Area Absen Manual
+        const manualEntry = document.querySelector('.manual-entry');
+        if(manualEntry) manualEntry.style.display = 'none';
+        
+        // Render ulang tabel absensi untuk membuang kotak centang (checkbox) massal
+        renderAbsensi();
+
+        showToast(`${sapaan}! Silakan scan QR Anda.`, 'info');
+        
+        // Nyalakan kamera otomatis
+        setTimeout(() => {
+            const btnStart = document.getElementById('btn-start-scan');
+            if(btnStart) btnStart.click();
+        }, 1000);
+    }
+    
     else {
         playBeep(true);
         showToast('PIN Akses Salah!', 'error');
@@ -566,25 +610,41 @@ function renderAbsensi() {
     const sudahAbsenNIS = absenHariIni.map(a => a.nis);
     const siswaBelumAbsen = dataSiswa.filter(s => !sudahAbsenNIS.includes(s.nis));
     
-    let htmlBelum = `
-    <div id="bulk-panel" style="display:none; padding:15px; background:var(--bg-card); border-radius:8px; border:1px solid var(--border); margin-bottom:15px; gap:10px; align-items:center; flex-wrap:wrap;">
-        <span style="font-size:13px; font-weight:600;">Tandai Massal:</span>
-        <button class="btn warning" style="padding:6px 12px; font-size:12px;" onclick="prosesBulk('Hadir')">Hadir</button>
-        <button class="btn warning" style="padding:6px 12px; font-size:12px;" onclick="prosesBulk('Sakit')">Sakit</button>
-        <button class="btn warning" style="padding:6px 12px; font-size:12px;" onclick="prosesBulk('Izin')">Izin</button>
-        <button class="btn warning" style="padding:6px 12px; font-size:12px;" onclick="prosesBulk('Alpa')">Alpa</button>
-    </div>
-    <table><tr><th style="width:40px;"><input type="checkbox" id="check-all" onchange="toggleSemua(this)"></th><th>NIS</th><th>Nama Lengkap</th><th>Kelas</th></tr>`;
+    let htmlBelum = '';
     
-    siswaBelumAbsen.forEach(s => { 
-        htmlBelum += `<tr>
-            <td><input type="checkbox" class="check-siswa" value="${s.nis}" onchange="cekBulkAction()"></td>
-            <td>${s.nis}</td><td><strong>${s.nama}</strong></td><td>${s.kelas}</td>
-        </tr>`; 
-    });
+    // CEK HAK AKSES: Jika Admin/Guru, tampilkan Checkbox Aksi Massal
+    if (currentRole !== 'siswa') {
+        htmlBelum += `
+        <div id="bulk-panel" style="display:none; padding:15px; background:var(--bg-card); border-radius:8px; border:1px solid var(--border); margin-bottom:15px; gap:10px; align-items:center; flex-wrap:wrap;">
+            <span style="font-size:13px; font-weight:600;">Tandai Massal:</span>
+            <button class="btn warning" style="padding:6px 12px; font-size:12px;" onclick="prosesBulk('Hadir')">Hadir</button>
+            <button class="btn warning" style="padding:6px 12px; font-size:12px;" onclick="prosesBulk('Sakit')">Sakit</button>
+            <button class="btn warning" style="padding:6px 12px; font-size:12px;" onclick="prosesBulk('Izin')">Izin</button>
+            <button class="btn warning" style="padding:6px 12px; font-size:12px;" onclick="prosesBulk('Alpa')">Alpa</button>
+        </div>
+        <table><tr><th style="width:40px;"><input type="checkbox" id="check-all" onchange="toggleSemua(this)"></th><th>NIS</th><th>Nama Lengkap</th><th>Kelas</th></tr>`;
+        
+        siswaBelumAbsen.forEach(s => { 
+            htmlBelum += `<tr>
+                <td><input type="checkbox" class="check-siswa" value="${s.nis}" onchange="cekBulkAction()"></td>
+                <td>${s.nis}</td><td><strong>${s.nama}</strong></td><td>${s.kelas}</td>
+            </tr>`; 
+        });
+    } 
+    // JIKA SISWA: Tampilkan tabel polos (Hanya untuk dilihat)
+    else {
+        htmlBelum += `<table><tr><th>NIS</th><th>Nama Lengkap</th><th>Kelas</th></tr>`;
+        
+        siswaBelumAbsen.forEach(s => { 
+            htmlBelum += `<tr>
+                <td>${s.nis}</td><td><strong>${s.nama}</strong></td><td>${s.kelas}</td>
+            </tr>`; 
+        });
+    }
+    htmlBelum += `</table>`;
     
     const wrapBelum = document.getElementById('belum-table-wrap');
-    if(wrapBelum) wrapBelum.innerHTML = siswaBelumAbsen.length === 0 ? '<div class="empty-state">Semua siswa sudah diabsen.</div>' : htmlBelum + '</table>';
+    if(wrapBelum) wrapBelum.innerHTML = siswaBelumAbsen.length === 0 ? '<div class="empty-state">Semua siswa sudah diabsen.</div>' : htmlBelum;
 
     // 3. Masukkan 'terlambat' sebagai pengurang angka 'Belum Absen'
     const absenDanAlpa = totalSiswa - hadir - terlambat - sakitIzin;
@@ -974,7 +1034,8 @@ window.renderAnalitik = function() {
     if(!dashboard || dataSiswa.length === 0) return;
     
     // Aktifkan Dashboard jika sedang di Mode Admin
-    dashboard.style.display = currentRole === 'guru' ? 'none' : 'flex';
+    // Sembunyikan Dashboard dari Guru dan Siswa (Hanya untuk Admin)
+    dashboard.style.display = (currentRole === 'guru' || currentRole === 'siswa') ? 'none' : 'flex';
 
     let rekap = dataSiswa.map(s => ({ nis: s.nis, nama: s.nama, kelas: s.kelas, hadir: 0, masalah: 0 }));
 
