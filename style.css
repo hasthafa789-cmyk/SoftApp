@@ -309,185 +309,90 @@ tr:hover td { background: #f8fafc; }
 @keyframes spin { 100% { transform: rotate(360deg); } }
 @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
 
-/* Responsive & Print */
-@media (max-width: 850px) {
-    .scan-layout, .panel-header { grid-template-columns: 1fr; flex-direction: column; }
-    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+/* =========================================================
+   RESPONSIVITAS TOTAL (DESKTOP, TABLET, SMARTPHONE)
+   ========================================================= */
+
+/* 1. Mencegah Tabel Merusak Layar (Anti-Stretching) */
+#siswa-table-wrap, #attendance-table-wrap, #belum-table-wrap {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 8px;
+    border: 1px solid var(--border);
 }
-@media (max-width: 600px) {
-    .tabs { flex-wrap: wrap; }
-    .tab { flex-basis: 50%; }
-    .masthead { flex-direction: column; text-align: center; gap: 16px; padding: 25px 20px;}
+table { border: none; } /* Hindari border ganda karena sudah di-wrap */
+
+/* 2. PWA & NATIVE APP EXPERIENCE (HP & DESKTOP) */
+body { overscroll-behavior-y: contain; } /* Cegah efek pull-to-refresh */
+.masthead, .tabs, .btn, th, .stat-card, .att-toggles {
+    -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent;
 }
+@media (display-mode: standalone) {
+    #btn-install-pwa { display: none !important; }
+    .masthead { padding-top: calc(30px + env(safe-area-inset-top)); }
+    #app { border-radius: 0; margin: 0; border: none; min-height: 100vh; box-shadow: none; max-width: 100%; }
+}
+
+/* 3. MODE TABLET & LAPTOP KECIL (Layar 769px - 1024px) */
+@media (max-width: 1024px) {
+    #app { margin: 20px auto; width: 95%; max-width: 100%; }
+    main { padding: 25px; }
+    .masthead { padding: 25px; }
+    .scan-layout, .panel-header { grid-template-columns: 1fr; flex-direction: column; align-items: stretch; }
+    .header-actions { display: flex; flex-wrap: wrap; justify-content: flex-start; }
+    .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 15px; }
+}
+
+/* 4. MODE SMARTPHONE (Layar di bawah 768px) */
+@media (max-width: 768px) {
+    #app { margin: 0; width: 100%; border-radius: 0; border: none; min-height: 100vh; box-shadow: none; }
+    main { padding: 15px; padding-bottom: 90px !important; }
+    
+    /* Merapikan Header HP */
+    .masthead { padding: 20px 15px; flex-direction: column; text-align: center; gap: 15px; }
+    .masthead > div:first-child { flex-direction: column; gap: 10px; }
+    .masthead h1 { font-size: 22px; }
+    .masthead > div:last-child { margin-left: 0; justify-content: center; width: 100%; }
+    
+    /* Merapikan Form Input & Tombol */
+    .form-row { padding: 15px; flex-direction: column; align-items: stretch; gap: 12px; }
+    .form-row .field { width: 100%; min-width: unset; }
+    .form-row .btn { width: 100%; justify-content: center; }
+    .header-actions .btn { flex: 1; justify-content: center; font-size: 13px; padding: 10px; }
+    
+    /* Kartu Statistik Mengecil */
+    .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .stat-card { padding: 15px; }
+    .stat-card h3 { font-size: 24px; margin-bottom: 4px; }
+    .stat-card p { font-size: 11px; }
+
+    /* Menu Navigasi Bawah (Bottom Nav) */
+    .tabs {
+        position: fixed; bottom: 0; left: 0; width: 100%; z-index: 9000;
+        box-shadow: 0 -4px 20px rgba(0,0,0,0.08); padding-bottom: env(safe-area-inset-bottom);
+        border-top: 1px solid var(--border); border-bottom: none; justify-content: space-around;
+    }
+    .tab { flex-direction: column; font-size: 11px; padding: 10px 5px; gap: 4px; border-bottom: none !important; }
+    .tab i { font-size: 22px; }
+    
+    /* Scanner Area */
+    .scanner-box { aspect-ratio: 3/4; border-radius: 10px; }
+}
+
 /* =========================================
    PERBAIKAN CETAK (PRINT) A4 SUPER RAPI
    ========================================= */
 @media print {
-    /* Set ukuran kertas A4 standar */
-    @page {
-        size: A4;
-        margin: 1.5cm;
-    }
-
-    /* 1. Sembunyikan SEMUA elemen yang tidak perlu dicetak dengan sempurna */
-    .masthead, 
-    .tabs, 
-    .panel-header, 
-    #tab-siswa, 
-    #tab-absensi, 
-    .header-actions, 
-    #toast, 
-    #loading-overlay, 
-    #pin-modal {
-        display: none !important;
-    }
-
-    /* 2. Bersihkan background dan margin pembungkus utama */
-    body, #app, main {
-        background: transparent !important;
-        padding: 0 !important;
-        margin: 0 !important;
-        box-shadow: none !important;
-        border: none !important;
-        max-width: 100% !important;
-        width: 100% !important;
-        overflow: visible !important;
-    }
-
-    /* 3. Tampilkan HANYA tab kartu */
-    #tab-kartu {
-        display: block !important;
-        opacity: 1 !important;
-        visibility: visible !important;
-    }
-
-    /* 4. Grid khusus cetak: 4 kolom presisi, membiarkan ke halaman 2 jika penuh */
-    .cards-grid {
-        position: relative !important; /* Jangan pakai absolute agar halaman tidak terpotong */
-        display: grid !important;
-        grid-template-columns: repeat(4, 1fr) !important;
-        gap: 15px !important;
-        width: 100% !important;
-    }
-
-    /* 5. Desain Kartu Cetak (Rapi untuk digunting) */
-    .qr-card {
-        break-inside: avoid !important; /* Mencegah kartu terbelah dua di tengah kertas */
-        page-break-inside: avoid !important;
-        border: 1px dashed #64748b !important; /* Border putus-putus sebagai panduan gunting */
-        padding: 15px !important;
-        text-align: center !important;
-        background: #fff !important;
-        box-shadow: none !important;
-        transform: none !important;
-        -webkit-print-color-adjust: exact !important; /* Paksa print warna asli */
-        print-color-adjust: exact !important;
-    }
-
-    /* 6. Hapus pita warna-warni hiasan agar hemat tinta */
-    .qr-card::before {
-        display: none !important;
-    }
-
-    /* 7. Penyesuaian Ukuran Teks Kartu */
-    .qr-card h3 {
-        font-size: 15px !important;
-        margin-top: 10px !important;
-        margin-bottom: 2px !important;
-        color: #000 !important; /* Tinta hitam pekat */
-    }
-
-    .qr-card p {
-        font-size: 12px !important;
-        color: #333 !important;
-        margin-bottom: 0 !important;
-    }
-
-    /* 8. Penyesuaian Ruang QR Code */
-    .qr-code {
-        border: none !important;
-        padding: 0 !important;
-        display: flex !important;
-        justify-content: center !important;
-        align-items: center !important;
-        box-shadow: none !important;
-    }
-}
-
-/* =========================================
-   PWA & NATIVE APP EXPERIENCE (HP & DESKTOP)
-   ========================================= */
-
-/* 1. Cegah efek "Tarik untuk Refresh" (Pull-to-refresh) di HP */
-body {
-    overscroll-behavior-y: contain;
-}
-
-/* 2. Cegah Teks UI tersorot/ter-highlight biru secara tidak sengaja saat disentuh */
-.masthead, .tabs, .btn, th, .stat-card, .att-toggles {
-    -webkit-user-select: none;
-    user-select: none;
-    -webkit-tap-highlight-color: transparent; /* Hilangkan kotak biru saat diklik di HP */
-}
-
-/* 3. ATURAN KHUSUS KETIKA DIBUKA DARI HOMESCREEN HP (MODE PWA) */
-@media (display-mode: standalone) {
-    /* Pastikan tombol Install App hilang karena sudah diinstal */
-    #btn-install-pwa {
-        display: none !important;
-    }
-
-    /* Tambahkan ruang aman untuk Poni Kamera (Notch) pada iPhone / Android modern */
-    .masthead {
-        padding-top: calc(35px + env(safe-area-inset-top));
-    }
-    
-    #app {
-        border-radius: 0; /* Buang sudut melengkung app agar full screen penuh */
-        margin: 0;
-        border: none;
-        min-height: 100vh;
-    }
-}
-
-/* 4. PEROMBAKAN MENU MENJADI BOTTOM NAVIGATION (HANYA UNTUK HP) */
-@media (max-width: 600px) {
-    /* Kunci menu Tab di bagian paling bawah layar */
-    .tabs {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        width: 100%;
-        z-index: 9000;
-        box-shadow: 0 -4px 15px rgba(0,0,0,0.08);
-        padding-bottom: env(safe-area-inset-bottom); /* Ruang aman untuk garis Home iPhone */
-        border-top: 1px solid var(--border);
-        border-bottom: none;
-        justify-content: space-around;
-    }
-
-    /* Ubah gaya tombol menu menjadi Ikon besar, teks kecil */
-    .tab {
-        flex-direction: column;
-        font-size: 11px;
-        padding: 12px 5px;
-        gap: 6px;
-        border-bottom: none !important;
-    }
-    
-    .tab i { font-size: 24px; }
-    
-    .tab.active {
-        color: var(--primary);
-    }
-
-    /* Beri ruang kosong di bawah agar konten tidak tertutup menu navigasi */
-    main {
-        padding-bottom: 100px !important;
-    }
-    
-    /* Perbaikan Scanner Kamera agar tetap rapi di HP */
-    .scanner-box {
-        aspect-ratio: 3/4; /* Kamera berdiri tegak (Portrait) di HP */
-    }
+    @page { size: A4; margin: 1.5cm; }
+    .masthead, .tabs, .panel-header, #tab-siswa, #tab-absensi, 
+    .header-actions, #toast, #loading-overlay, #pin-modal, #network-status { display: none !important; }
+    body, #app, main { background: transparent !important; padding: 0 !important; margin: 0 !important; box-shadow: none !important; border: none !important; max-width: 100% !important; width: 100% !important; overflow: visible !important; }
+    #tab-kartu { display: block !important; opacity: 1 !important; visibility: visible !important; }
+    .cards-grid { position: relative !important; display: grid !important; grid-template-columns: repeat(4, 1fr) !important; gap: 15px !important; width: 100% !important; }
+    .qr-card { break-inside: avoid !important; page-break-inside: avoid !important; border: 1px dashed #64748b !important; padding: 15px !important; text-align: center !important; background: #fff !important; box-shadow: none !important; transform: none !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    .qr-card::before { display: none !important; }
+    .qr-card h3 { font-size: 15px !important; margin-top: 10px !important; margin-bottom: 2px !important; color: #000 !important; }
+    .qr-card p { font-size: 12px !important; color: #333 !important; margin-bottom: 0 !important; }
+    .qr-code { border: none !important; padding: 0 !important; display: flex !important; justify-content: center !important; align-items: center !important; box-shadow: none !important; }
 }
