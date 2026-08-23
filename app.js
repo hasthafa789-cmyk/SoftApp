@@ -13,7 +13,7 @@ let searchTimeout;
 let myChart = null; 
 
 // MASUKKAN URL GOOGLE APPS SCRIPT ANDA DI SINI
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwSKGIEkB8ucclW0_BNDM_zUXVpDyRew1saJ4MxV4kQhOA-gY8BfKdO_s6Smfogox7Iiw/exec';
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxBrLwpbDpST9KpTyM2CEKbbkyjKtexA6bd7DjSPpt2LVjmimNkhigxNKrvD_otZtLscQ/exec';
 
 // ==========================================
 // INISIALISASI & API UTILS
@@ -50,59 +50,32 @@ function setLoading(isLoading) {
     if (overlay) overlay.classList.toggle('active', isLoading); 
 }
 
-// PERBAIKAN: Kompatibilitas untuk script lama maupun baru
 async function fetchToCloud(formData) {
     if (!GOOGLE_SCRIPT_URL) return { success: false, message: "URL Script tidak disetel." };
     try {
         setLoading(true);
         const response = await fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: formData });
-        const textResult = await response.text(); 
+        const result = await response.json();
         setLoading(false);
-        
-        try {
-            return JSON.parse(textResult); // Script Baru (JSON)
-        } catch (e) {
-            return { success: true, message: textResult }; // Script Lama (Teks Biasa)
-        }
+        return result;
     } catch (error) {
         setLoading(false);
-        return { success: false, message: "Offline_Mode" };
+        return { success: false, message: "Gagal terhubung ke Cloud. Pastikan Anda online." };
     }
 }
 
-// PERBAIKAN: Anti-Wipe (Tidak akan menghapus data jika cloud kosong)
 async function syncDataLokalDenganCloud() {
     setLoading(true);
     try {
         const response = await fetch(GOOGLE_SCRIPT_URL);
-        const textData = await response.text();
-        
-        let dataCloud;
-        try { dataCloud = JSON.parse(textData); } catch (e) { throw new Error("Respons bukan JSON"); }
-        
-        if (dataCloud) {
-            let adaUpdate = false;
-            // Hanya timpa data jika array dari cloud memiliki isi
-            if (dataCloud.siswa && dataCloud.siswa.length > 0) {
-                dataSiswa = dataCloud.siswa;
-                adaUpdate = true;
-            }
-            if (dataCloud.absensi && Object.keys(dataCloud.absensi).length > 0) {
-                dataAbsen = dataCloud.absensi;
-                adaUpdate = true;
-            }
-            
+        const dataCloud = await response.json();
+        if(dataCloud && dataCloud.success) {
+            dataSiswa = dataCloud.siswa || [];
+            dataAbsen = dataCloud.absensi || {};
             simpanData(); updateUI();
-            
-            if (adaUpdate) {
-                showToast('Data berhasil disinkronkan dari Cloud!', 'success');
-            } else {
-                showToast('Terhubung ke Cloud (Data di Server masih kosong).', 'success');
-            }
+            showToast('Data tersinkronisasi dengan Cloud!', 'success');
         }
-    } catch (error) { 
-        showToast('Mode Lokal (Anda sedang offline atau URL bermasalah).', 'warning'); 
-    }
+    } catch (error) { showToast('Anda sedang Offline (Mode Lokal Aktif).', 'warning'); }
     finally { setLoading(false); }
 }
 
@@ -135,14 +108,11 @@ document.getElementById('btn-tambah-siswa')?.addEventListener('click', async () 
         promptPIN(async (pin) => {
             formData.append('pin', pin);
             const res = await fetchToCloud(formData);
-            
-            if (res.success || res.message.includes("Berhasil")) {
+            if (res.success) {
                 const index = dataSiswa.findIndex(s => s.nis === editModeNIS);
-                if (index !== -1) {
-                    dataSiswa[index] = { nis, nama, kelas };
-                    simpanData(); updateUI(); batalEdit();
-                    showToast('Data siswa berhasil diedit!', 'success');
-                }
+                dataSiswa[index] = { nis, nama, kelas };
+                showToast('Data siswa berhasil diedit di Server!', 'success');
+                batalEdit(); simpanData(); updateUI();
             } else { showToast(res.message, 'danger'); }
         });
     } else { 
@@ -150,14 +120,12 @@ document.getElementById('btn-tambah-siswa')?.addEventListener('click', async () 
         formData.append('aksi', 'tambah_siswa');
         
         const res = await fetchToCloud(formData);
-        if(res.success || res.message === "Offline_Mode") { 
+        if(res.success || !res.success) { 
             dataSiswa.push({ nis, nama, kelas });
-            showToast(res.success ? 'Siswa berhasil ditambahkan.' : 'Tersimpan ke Penyimpanan Lokal.', res.success ? 'success' : 'warning');
+            showToast('Siswa berhasil ditambahkan.', 'success');
             document.getElementById('input-nis').value = ''; document.getElementById('input-nama').value = ''; document.getElementById('input-kelas').value = '';
             simpanData(); updateUI();
-        } else {
-            showToast(res.message, 'danger');
-        }
+        } 
     }
 });
 
@@ -187,9 +155,9 @@ window.hapusSiswa = function(nis) {
     promptPIN(async (pin) => {
         let formData = new URLSearchParams({ aksi: 'hapus_siswa', nis, pin });
         const res = await fetchToCloud(formData);
-        if (res.success || res.message.includes("Berhasil")) {
+        if (res.success) {
             dataSiswa = dataSiswa.filter(s => s.nis !== nis);
-            simpanData(); updateUI(); showToast('Siswa berhasil dihapus.', 'success');
+            simpanData(); updateUI(); showToast('Siswa berhasil dihapus dari Server.', 'success');
         } else { showToast(res.message, 'danger'); }
     });
 }
@@ -198,7 +166,7 @@ document.getElementById('btn-hapus-semua')?.addEventListener('click', () => {
     promptPIN(async (pin) => {
         let formData = new URLSearchParams({ aksi: 'hapus_semua', pin });
         const res = await fetchToCloud(formData);
-        if (res.success || res.message.includes("Dihapus")) {
+        if (res.success) {
             dataSiswa = []; simpanData(); updateUI(); showToast('Semua data di-reset.', 'success');
         } else { showToast(res.message, 'danger'); }
     });
@@ -254,7 +222,7 @@ window.goToPage = function(pageNumber) {
 };
 
 // ==========================================
-// FITUR 2: SCANNER & PENCEGAH DOUBLE SCAN 
+// FITUR 2: SCANNER & CHART HISTORIS 
 // ==========================================
 const video = document.getElementById('scanner-video');
 const canvasElement = document.getElementById('scan-canvas');
@@ -293,13 +261,12 @@ function tick() {
             const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" });
             
             if (code) { 
-                // Deteksi keamanan
                 if (code.data.startsWith("SOFTAPP-QR:")) {
                     const actualNis = code.data.replace("SOFTAPP-QR:", "");
                     catatAbsen(actualNis, 'Hadir'); 
                 } else {
                     playBeep(true); 
-                    showToast('QR Code Ditolak! Bukan kartu resmi.', 'danger');
+                    showToast('QR Code Ditolak! Bukan kartu dari sistem ini.', 'danger');
                 }
                 setTimeout(() => { requestAnimationFrame(tick); }, 2500); 
                 return; 
@@ -324,14 +291,14 @@ async function catatAbsen(nis, status, isManual = false) {
 
     const tgl = dateInput?.value || new Date().toISOString().split('T')[0];
     
-    // --- FITUR BARU: PENCEGAH DOUBLE SCAN ---
+    // --- LOGIKA PENCEGAH DOUBLE SCAN ---
     if (!isManual && dataAbsen[tgl]) {
         const riwayat = dataAbsen[tgl].find(a => a.nis === nis);
-        // Jika menscan lagi dan sudah "Hadir", batalkan
+        // Jika scan kamera dan sebelumnya sudah tercatat 'Hadir', tolak prosesnya
         if (riwayat && riwayat.status === 'Hadir') {
-            playBeep(true); // Nada Error
-            showToast(`Gagal: ${siswa.nama} sudah absen hari ini!`, 'warning');
-            return; // Hentikan eksekusi disini
+            playBeep(true); // Nada error (rendah)
+            showToast(`Gagal: ${siswa.nama} sudah absen Hadir hari ini!`, 'warning');
+            return; // Hentikan fungsi di sini
         }
     }
 
@@ -347,7 +314,7 @@ async function catatAbsen(nis, status, isManual = false) {
     showToast(`${siswa.nama} ditandai: ${status}`, 'success');
 
     let formData = new URLSearchParams({ aksi: 'absen', tanggal: tgl, waktu: waktuSekarang, nis: siswa.nis, nama: siswa.nama, kelas: siswa.kelas, status: status });
-    fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: formData }).catch(e => console.log('Sinkronisasi tertunda (Offline)'));
+    fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: formData }).catch(e => console.log('Sinkronisasi absen offline'));
 }
 
 dateInput?.addEventListener('change', renderAbsensi);
@@ -374,6 +341,7 @@ function renderAbsensi() {
     if(wrapBelum) wrapBelum.innerHTML = siswaBelumAbsen.length === 0 ? '<div class="empty-state">Semua siswa sudah diabsen.</div>' : htmlBelum + '</table>';
 
     const absenDanAlpa = totalSiswa - hadir - sakitIzin;
+
     const pcnHadir = totalSiswa ? Math.round((hadir / totalSiswa) * 100) : 0;
     const pcnSakit = totalSiswa ? Math.round((sakitIzin / totalSiswa) * 100) : 0;
     const pcnAlpa = totalSiswa ? Math.round((absenDanAlpa / totalSiswa) * 100) : 0;
@@ -436,7 +404,10 @@ function renderTrendChart() {
             options: { 
                 responsive: true, 
                 maintainAspectRatio: false, 
-                plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false } }, 
+                plugins: { 
+                    legend: { display: false },
+                    tooltip: { mode: 'index', intersect: false } 
+                }, 
                 scales: { 
                     y: { beginAtZero: true, suggestedMax: dataSiswa.length > 0 ? dataSiswa.length : 10, ticks: { stepSize: 1 } },
                     x: { grid: { display: false } }
@@ -447,7 +418,7 @@ function renderTrendChart() {
 }
 
 // ==========================================
-// FITUR 3: EXPORT & CETAK QR CODE
+// FITUR 3: EXPORT
 // ==========================================
 document.getElementById('btn-export-pdf')?.addEventListener('click', () => {
     if (typeof window.jspdf === 'undefined') return showToast("Sistem PDF masih dimuat, mohon tunggu sebentar.", "warning");
@@ -509,9 +480,6 @@ document.querySelectorAll('.tab').forEach(tab => {
         tab.classList.add('active'); 
         const p = document.getElementById(`tab-${tab.dataset.tab}`); if(p) p.classList.add('active');
         if (tab.dataset.tab !== 'absensi') stopKamera();
-        
-        // Anti-Gagal Render Kartu
-        if (tab.dataset.tab === 'kartu') renderKartu();
     });
 });
 
@@ -528,37 +496,21 @@ function renderKartu() {
     const wrap = document.getElementById('cards-grid-wrap'); 
     if(!wrap) return;
     wrap.innerHTML = '';
-    
-    if (dataSiswa.length === 0) {
-        wrap.innerHTML = '<div class="empty-state">Belum ada siswa.</div>';
-        return;
-    }
+    if (dataSiswa.length === 0) return wrap.innerHTML = '<div class="empty-state">Belum ada siswa.</div>';
     
     dataSiswa.forEach(s => {
-        const card = document.createElement('div'); 
-        card.className = 'qr-card';
-        const safeId = `qr-${String(s.nis).replace(/[^a-zA-Z0-9]/g, '')}`;
-        
-        card.innerHTML = `<div class="qr-code" id="${safeId}"></div><h3>${s.nama}</h3><p>${s.kelas} &bull; ${s.nis}</p>`;
+        const card = document.createElement('div'); card.className = 'qr-card';
+        card.innerHTML = `<div class="qr-code" id="qr-${s.nis}"></div><h3>${s.nama}</h3><p>${s.kelas} &bull; ${s.nis}</p>`;
         wrap.appendChild(card); 
         
-        try {
-            if(typeof QRCode !== 'undefined') {
-                setTimeout(() => {
-                    const el = document.getElementById(safeId);
-                    if(el) {
-                        el.innerHTML = ''; 
-                        new QRCode(el, { 
-                            text: "SOFTAPP-QR:" + s.nis, 
-                            width: 140, 
-                            height: 140, 
-                            colorDark: "#0f172a",
-                            correctLevel: QRCode.CorrectLevel.L
-                        });
-                    }
-                }, 50);
-            }
-        } catch (error) { console.error("Gagal cetak QR Code:", error); }
+        if(typeof QRCode !== 'undefined') {
+            new QRCode(document.getElementById(`qr-${s.nis}`), { 
+                text: "SOFTAPP-QR:" + s.nis, 
+                width: 140, 
+                height: 140, 
+                colorDark: "#0f172a" 
+            });
+        }
     });
 }
 document.getElementById('btn-print-kartu')?.addEventListener('click', () => window.print());

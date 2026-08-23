@@ -238,27 +238,97 @@ tr:hover td { background: #f8fafc; }
     .tab { flex-basis: 50%; }
     .masthead { flex-direction: column; text-align: center; gap: 16px; padding: 25px 20px;}
 }
+/* =========================================
+   PERBAIKAN CETAK (PRINT) A4 SUPER RAPI
+   ========================================= */
 @media print {
-    body * { visibility: hidden; }
-    #tab-kartu, #tab-kartu * { visibility: visible; }
-    #app { box-shadow: none; margin: 0; max-width: 100%; border: none; padding: 0;}
-    .masthead, .tabs, .panel-header, .header-actions { display: none !important; }
-    
-    /* Perbaikan Grid Cetak agar pas di kertas A4 */
-    .cards-grid { 
-        position: absolute; left: 0; top: 0; width: 100%;
+    /* Set ukuran kertas A4 standar */
+    @page {
+        size: A4;
+        margin: 1.5cm;
+    }
+
+    /* 1. Sembunyikan SEMUA elemen yang tidak perlu dicetak dengan sempurna */
+    .masthead, 
+    .tabs, 
+    .panel-header, 
+    #tab-siswa, 
+    #tab-absensi, 
+    .header-actions, 
+    #toast, 
+    #loading-overlay, 
+    #pin-modal {
+        display: none !important;
+    }
+
+    /* 2. Bersihkan background dan margin pembungkus utama */
+    body, #app, main {
+        background: transparent !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        box-shadow: none !important;
+        border: none !important;
+        max-width: 100% !important;
+        width: 100% !important;
+        overflow: visible !important;
+    }
+
+    /* 3. Tampilkan HANYA tab kartu */
+    #tab-kartu {
+        display: block !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+    }
+
+    /* 4. Grid khusus cetak: 4 kolom presisi, membiarkan ke halaman 2 jika penuh */
+    .cards-grid {
+        position: relative !important; /* Jangan pakai absolute agar halaman tidak terpotong */
         display: grid !important;
-        grid-template-columns: repeat(4, 1fr) !important; 
-        gap: 15px !important; 
+        grid-template-columns: repeat(4, 1fr) !important;
+        gap: 15px !important;
+        width: 100% !important;
     }
-    
-    /* Mencegah kartu terpotong di tengah-tengah pergantian kertas */
-    .qr-card { 
-        break-inside: avoid; 
-        page-break-inside: avoid; 
-        border: 1px solid #cbd5e1; 
-        box-shadow: none; 
-        transform: none;
+
+    /* 5. Desain Kartu Cetak (Rapi untuk digunting) */
+    .qr-card {
+        break-inside: avoid !important; /* Mencegah kartu terbelah dua di tengah kertas */
+        page-break-inside: avoid !important;
+        border: 1px dashed #64748b !important; /* Border putus-putus sebagai panduan gunting */
+        padding: 15px !important;
+        text-align: center !important;
+        background: #fff !important;
+        box-shadow: none !important;
+        transform: none !important;
+        -webkit-print-color-adjust: exact !important; /* Paksa print warna asli */
+        print-color-adjust: exact !important;
     }
-    .qr-card::before { display: none; }
+
+    /* 6. Hapus pita warna-warni hiasan agar hemat tinta */
+    .qr-card::before {
+        display: none !important;
+    }
+
+    /* 7. Penyesuaian Ukuran Teks Kartu */
+    .qr-card h3 {
+        font-size: 15px !important;
+        margin-top: 10px !important;
+        margin-bottom: 2px !important;
+        color: #000 !important; /* Tinta hitam pekat */
+    }
+
+    .qr-card p {
+        font-size: 12px !important;
+        color: #333 !important;
+        margin-bottom: 0 !important;
+    }
+
+    /* 8. Penyesuaian Ruang QR Code */
+    .qr-code {
+        border: none !important;
+        padding: 0 !important;
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        box-shadow: none !important;
+    }
 }
