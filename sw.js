@@ -1,4 +1,4 @@
-const CACHE_NAME = 'softapp-pro-v1';
+const CACHE_NAME = 'softapp-pro-v3';
 const ASSETS_TO_CACHE = [
     './',
     './index.html',

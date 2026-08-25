@@ -39,6 +39,7 @@ localStorage.removeItem('absensi_pro');
 // Jadikan variabel kosong saat awal buka (menunggu data dari Cloud)
 let dataSiswa = [];
 let dataAbsen = {};
+let dataAnekdot = [];
 let videoStream = null;
 let scanInterval = null;
 let editModeNIS = null;
@@ -104,6 +105,7 @@ document.getElementById('btn-login')?.addEventListener('click', () => {
         // 1. Sembunyikan Tab Master Data & Cetak Kartu
         document.querySelector('[data-tab="siswa"]').style.display = 'none';
         document.querySelector('[data-tab="kartu"]').style.display = 'none';
+        document.querySelector('[data-tab="anekdot"]').style.display = 'none';
         
         // 2. Pindah ke Tab Absensi
         document.querySelector('[data-tab="absensi"]').click();
@@ -141,7 +143,7 @@ document.getElementById('btn-login')?.addEventListener('click', () => {
 });
 
 // MASUKKAN URL GOOGLE APPS SCRIPT ANDA DI SINI
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyVMH1AfG0xRxeityWaCFI_bzxwIJ0vejP_F8-KuGWPDJfV9vuZIoR-uQ1D9q-ryQ8Ieg/exec';
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzltD7TTo19_dEc7jvHzcR5i1qgDJ46hY-eU1q3imWPtmGM6Z56gByBoucSLn-G5zosng/exec';
 
 // ==========================================
 // SWEETALERT2 & UTILS PENDUKUNG
@@ -248,6 +250,13 @@ async function syncDataLokalDenganCloud() {
             // KUNCI: Menimpa data secara mutlak. Jika di spreadsheet dihapus, web akan ikut terhapus!
             dataSiswa = dataCloud.siswa || [];
             dataAbsen = dataCloud.absensi || {};
+            dataAnekdot = dataCloud.anekdot || [];
+            // BARU: Kategori & Jenis Kesalahan kustom kini disimpan di spreadsheet (Sheet "Master Kategori" & "Master Jenis"),
+            // bukan di localStorage HP, agar sinkron sama persis di semua perangkat.
+            kategoriCustomCloud = dataCloud.kategoriCustom || [];
+            jenisCustomCloud = dataCloud.jenisCustom || {};
+            renderPilihanKategori();
+            populateJenisKesalahan(document.getElementById('select-anekdot-kategori')?.value || 'Sosial-Emosional');
             updateUI();
         }
     } catch (error) { 
@@ -270,6 +279,8 @@ function updateUI() {
     updateSelectManual(); 
     cekKalenderPintar();
     renderAnalitik(); // <--- BARIS INI PENTING DITAMBAHKAN
+    updateSelectAnekdotSiswa();
+    renderAnekdot();
 }
 
 function updateDropdownKelas() {
@@ -300,8 +311,9 @@ function updateDropdownKelas() {
 // ==========================================
 document.getElementById('btn-tambah-siswa')?.addEventListener('click', async () => {
     const nis = document.getElementById('input-nis')?.value.trim(); const nama = document.getElementById('input-nama')?.value.trim(); const kelas = document.getElementById('input-kelas')?.value.trim();
+    const no_wa = document.getElementById('input-wa')?.value.trim();
     if (!nis || !nama || !kelas) return showToast('Lengkapi seluruh data!', 'warning');
-    let formData = new URLSearchParams({ nis, nama, kelas });
+    let formData = new URLSearchParams({ nis, nama, kelas, no_wa });
 
     if (editModeNIS) { 
         formData.append('aksi', 'edit_siswa'); formData.append('nis_lama', editModeNIS);
@@ -309,7 +321,7 @@ document.getElementById('btn-tambah-siswa')?.addEventListener('click', async () 
             formData.append('pin', pin); const res = await fetchToCloud(formData);
             if (res.success || res.message.includes("Berhasil")) {
                 const index = dataSiswa.findIndex(s => s.nis === editModeNIS);
-                if (index !== -1) { dataSiswa[index] = { nis, nama, kelas }; simpanData(); updateUI(); batalEdit(); showToast('Data diedit!', 'success'); }
+                if (index !== -1) { dataSiswa[index] = { nis, nama, kelas, no_wa }; simpanData(); updateUI(); batalEdit(); showToast('Data diedit!', 'success'); }
             } else { showToast(res.message, 'error'); }
         });
     } else { 
@@ -317,8 +329,8 @@ document.getElementById('btn-tambah-siswa')?.addEventListener('click', async () 
         formData.append('aksi', 'tambah_siswa');
         const res = await fetchToCloud(formData);
         if(res.success || res.message === "Offline_Mode") { 
-            dataSiswa.push({ nis, nama, kelas }); showToast(res.success ? 'Siswa ditambahkan.' : 'Disimpan Lokal.', res.success ? 'success' : 'info');
-            document.getElementById('input-nis').value = ''; document.getElementById('input-nama').value = ''; document.getElementById('input-kelas').value = '';
+            dataSiswa.push({ nis, nama, kelas, no_wa }); showToast(res.success ? 'Siswa ditambahkan.' : 'Disimpan Lokal.', res.success ? 'success' : 'info');
+            document.getElementById('input-nis').value = ''; document.getElementById('input-nama').value = ''; document.getElementById('input-kelas').value = ''; document.getElementById('input-wa').value = '';
             simpanData(); updateUI();
         } else { showToast(res.message, 'error'); }
     }
@@ -327,13 +339,14 @@ document.getElementById('btn-tambah-siswa')?.addEventListener('click', async () 
 window.editSiswa = function(nis) {
     const siswa = dataSiswa.find(s => s.nis === nis); if (!siswa) return;
     document.getElementById('input-nis').value = siswa.nis; document.getElementById('input-nama').value = siswa.nama; document.getElementById('input-kelas').value = siswa.kelas;
+    document.getElementById('input-wa').value = siswa.no_wa || '';
     editModeNIS = nis; const btnSimpan = document.getElementById('btn-tambah-siswa');
     if (btnSimpan) { btnSimpan.innerHTML = '<i class="ph ph-floppy-disk"></i> Update Data'; btnSimpan.classList.add('warning'); }
     document.getElementById('btn-batal-edit').style.display = 'flex';
 }
 
 function batalEdit() {
-    editModeNIS = null; document.getElementById('input-nis').value = ''; document.getElementById('input-nama').value = ''; document.getElementById('input-kelas').value = '';
+    editModeNIS = null; document.getElementById('input-nis').value = ''; document.getElementById('input-nama').value = ''; document.getElementById('input-kelas').value = ''; document.getElementById('input-wa').value = '';
     const btnSimpan = document.getElementById('btn-tambah-siswa');
     if (btnSimpan) { btnSimpan.innerHTML = '<i class="ph ph-plus"></i> Simpan'; btnSimpan.classList.remove('warning'); }
     document.getElementById('btn-batal-edit').style.display = 'none';
@@ -410,10 +423,11 @@ let filteredSiswa = dataSiswa.filter(s => {
         <th class="sortable" onclick="handleSort('nis')">NIS${getIcon('nis')}</th>
         <th class="sortable" onclick="handleSort('nama')">Nama Lengkap${getIcon('nama')}</th>
         <th class="sortable" onclick="handleSort('kelas')">Kelas${getIcon('kelas')}</th>
+        <th>No. WA Ortu</th>
         <th style="width:120px;">Aksi</th></tr>`;
         
     paginatedData.forEach(s => {
-        html += `<tr><td><strong>${s.nis}</strong></td><td>${s.nama}</td><td>${s.kelas}</td>
+        html += `<tr><td><strong>${s.nis}</strong></td><td>${s.nama}</td><td>${s.kelas}</td><td>${s.no_wa || '-'}</td>
         <td><div style="display:flex; gap:8px;">
             <button class="btn warning" style="padding:6px 10px;" onclick="editSiswa('${s.nis}')" title="Edit"><i class="ph ph-pencil-simple"></i></button>
             <button class="btn danger" style="padding:6px 10px;" onclick="hapusSiswa('${s.nis}')" title="Hapus"><i class="ph ph-trash"></i></button>
@@ -908,6 +922,385 @@ document.getElementById('btn-export-excel')?.addEventListener('click', async () 
 });
 
 // ==========================================
+// FITUR: CATATAN ANEKDOT
+// ==========================================
+(function() {
+    const tglInput = document.getElementById('input-anekdot-tanggal');
+    if (tglInput) {
+        const today = new Date();
+        tglInput.value = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    }
+})();
+
+// BARU: Daftar Jenis Kesalahan/Kejadian per Kategori, agar guru tinggal klik (tidak perlu ketik manual)
+const JENIS_KESALAHAN_MAP = {
+    'Sosial-Emosional': [
+        'Berkelahi/bertengkar dengan teman',
+        'Mengganggu teman saat belajar',
+        'Bullying/perundungan',
+        'Menarik diri dari pergaulan',
+        'Menangis/emosi tanpa sebab jelas',
+        'Lainnya'
+    ],
+    'Akademik': [
+        'Tidak mengerjakan PR/tugas',
+        'Nilai ulangan menurun drastis',
+        'Tidak fokus saat pembelajaran',
+        'Mencontek saat ujian',
+        'Tidak membawa buku/alat tulis',
+        'Lainnya'
+    ],
+    'Kedisiplinan': [
+        'Terlambat masuk kelas',
+        'Tidak memakai seragam lengkap',
+        'Membolos/kabur saat jam pelajaran',
+        'Membawa HP tanpa izin',
+        'Melanggar tata tertib sekolah',
+        'Lainnya'
+    ],
+    'Prestasi': [
+        'Juara lomba akademik',
+        'Juara lomba non-akademik',
+        'Nilai terbaik di kelas',
+        'Aktif membantu teman/guru',
+        'Menunjukkan sikap kepemimpinan',
+        'Lainnya'
+    ],
+    'Kesehatan': [
+        'Sakit berulang',
+        'Mengeluh pusing/lelah',
+        'Cedera saat aktivitas',
+        'Mengantuk/kurang tidur di kelas',
+        'Alergi/kondisi kesehatan khusus',
+        'Lainnya'
+    ]
+};
+
+// BARU: Template kalimat otomatis untuk mengisi Catatan Observasi saat Jenis Kesalahan dipilih
+const TEMPLATE_CATATAN_JENIS = {
+    'Berkelahi/bertengkar dengan teman': 'Siswa terlibat perkelahian/pertengkaran dengan teman. ',
+    'Mengganggu teman saat belajar': 'Siswa mengganggu teman lain saat kegiatan belajar berlangsung. ',
+    'Bullying/perundungan': 'Siswa melakukan tindakan perundungan terhadap teman. ',
+    'Menarik diri dari pergaulan': 'Siswa terlihat menarik diri dan enggan bergaul dengan teman-temannya. ',
+    'Menangis/emosi tanpa sebab jelas': 'Siswa menangis/menunjukkan emosi tanpa sebab yang jelas. ',
+    'Tidak mengerjakan PR/tugas': 'Siswa tidak mengerjakan PR/tugas yang diberikan. ',
+    'Nilai ulangan menurun drastis': 'Nilai ulangan siswa menurun drastis dibanding sebelumnya. ',
+    'Tidak fokus saat pembelajaran': 'Siswa terlihat tidak fokus/melamun selama pembelajaran. ',
+    'Mencontek saat ujian': 'Siswa kedapatan mencontek saat ujian/ulangan. ',
+    'Tidak membawa buku/alat tulis': 'Siswa tidak membawa buku/alat tulis yang diperlukan. ',
+    'Terlambat masuk kelas': 'Siswa terlambat masuk kelas. ',
+    'Tidak memakai seragam lengkap': 'Siswa tidak memakai seragam sekolah secara lengkap. ',
+    'Membolos/kabur saat jam pelajaran': 'Siswa membolos/kabur saat jam pelajaran berlangsung. ',
+    'Membawa HP tanpa izin': 'Siswa membawa/menggunakan HP tanpa izin di lingkungan sekolah. ',
+    'Melanggar tata tertib sekolah': 'Siswa melanggar tata tertib sekolah. ',
+    'Juara lomba akademik': 'Siswa meraih juara pada lomba akademik. ',
+    'Juara lomba non-akademik': 'Siswa meraih juara pada lomba non-akademik. ',
+    'Nilai terbaik di kelas': 'Siswa meraih nilai terbaik di kelas. ',
+    'Aktif membantu teman/guru': 'Siswa aktif membantu teman/guru dalam kegiatan sekolah. ',
+    'Menunjukkan sikap kepemimpinan': 'Siswa menunjukkan sikap kepemimpinan yang baik. ',
+    'Sakit berulang': 'Siswa mengalami sakit secara berulang dalam periode belakangan ini. ',
+    'Mengeluh pusing/lelah': 'Siswa mengeluh pusing/lelah saat di sekolah. ',
+    'Cedera saat aktivitas': 'Siswa mengalami cedera saat mengikuti aktivitas sekolah. ',
+    'Mengantuk/kurang tidur di kelas': 'Siswa terlihat mengantuk/kurang tidur saat di kelas. ',
+    'Alergi/kondisi kesehatan khusus': 'Siswa menunjukkan gejala terkait alergi/kondisi kesehatan khusus. '
+};
+
+// BARU: Kategori & Jenis Kesalahan kustom yang ditambahkan guru — disimpan di SPREADSHEET
+// (sheet "Master Kategori" & "Master Jenis"), bukan di localStorage HP, agar begitu ditambah
+// di satu perangkat, langsung sinkron dan muncul juga di perangkat lain setelah refresh/sync.
+let kategoriCustomCloud = [];
+let jenisCustomCloud = {};
+
+// Gabungan semua kategori: bawaan sistem + kategori kustom dari spreadsheet
+function getSemuaKategori() {
+    return [...Object.keys(JENIS_KESALAHAN_MAP), ...kategoriCustomCloud];
+}
+
+// BARU: Render ulang dropdown Kategori (form input & filter) berdasarkan daftar terkini
+function renderPilihanKategori(selectedValue) {
+    const daftarKategori = getSemuaKategori();
+    const selectForm = document.getElementById('select-anekdot-kategori');
+    const selectFilter = document.getElementById('filter-anekdot-kategori');
+
+    if (selectForm) {
+        const nilaiSekarang = selectedValue || selectForm.value;
+        selectForm.innerHTML = daftarKategori.map(k => `<option value="${k}">${k}</option>`).join('');
+        if (daftarKategori.includes(nilaiSekarang)) selectForm.value = nilaiSekarang;
+    }
+    if (selectFilter) {
+        const nilaiFilterSekarang = selectFilter.value;
+        selectFilter.innerHTML = '<option value="">Semua Kategori</option>' + daftarKategori.map(k => `<option value="${k}">${k}</option>`).join('');
+        selectFilter.value = nilaiFilterSekarang;
+    }
+}
+
+// BARU: Isi dropdown Jenis Kesalahan sesuai Kategori yang dipilih (bawaan sistem + kustom dari spreadsheet)
+function populateJenisKesalahan(kategori) {
+    const selectJenis = document.getElementById('select-anekdot-jenis');
+    if (!selectJenis) return;
+    const daftarBawaan = (JENIS_KESALAHAN_MAP[kategori] || []).filter(j => j !== 'Lainnya');
+    const daftarCustom = jenisCustomCloud[kategori] || [];
+    const daftar = [...daftarBawaan, ...daftarCustom, 'Lainnya'];
+    let opt = '<option value="">Pilih Jenis...</option>';
+    daftar.forEach(j => { opt += `<option value="${j}">${j}</option>`; });
+    selectJenis.innerHTML = opt;
+}
+
+// BARU: Saat Kategori berubah, refresh pilihan Jenis Kesalahan
+document.getElementById('select-anekdot-kategori')?.addEventListener('change', (e) => {
+    populateJenisKesalahan(e.target.value);
+});
+
+// BARU: Tombol tambah Kategori baru -> disimpan ke spreadsheet (Sheet "Master Kategori")
+document.getElementById('btn-tambah-kategori')?.addEventListener('click', async () => {
+    if (!navigator.onLine) { showToast('Perlu koneksi internet untuk menambah kategori.', 'error'); return; }
+
+    const { value: namaBaru } = await Swal.fire({
+        title: 'Tambah Kategori Baru',
+        input: 'text',
+        inputLabel: 'Nama kategori',
+        inputPlaceholder: 'Contoh: Ekstrakurikuler',
+        showCancelButton: true,
+        confirmButtonText: 'Simpan',
+        cancelButtonText: 'Batal',
+        confirmButtonColor: '#171717',
+        cancelButtonColor: '#737373',
+        inputValidator: (value) => {
+            if (!value || !value.trim()) return 'Nama kategori tidak boleh kosong!';
+            if (getSemuaKategori().some(k => k.toLowerCase() === value.trim().toLowerCase())) return 'Kategori tersebut sudah ada!';
+        }
+    });
+    if (!namaBaru) return;
+    const kategoriBaru = namaBaru.trim();
+
+    const formData = new URLSearchParams({ aksi: 'tambah_kategori', kategori: kategoriBaru });
+    const res = await fetchToCloud(formData);
+    if (!res.success) { showToast(res.message || 'Gagal menyimpan kategori.', 'error'); return; }
+
+    kategoriCustomCloud.push(kategoriBaru);
+    renderPilihanKategori(kategoriBaru);
+    populateJenisKesalahan(kategoriBaru);
+    showToast('Kategori baru disimpan ke spreadsheet.', 'success');
+});
+
+// BARU: Tombol tambah Jenis Kesalahan baru -> disimpan ke spreadsheet (Sheet "Master Jenis")
+document.getElementById('btn-tambah-jenis')?.addEventListener('click', async () => {
+    const kategoriAktif = document.getElementById('select-anekdot-kategori')?.value;
+    if (!kategoriAktif) {
+        showToast('Pilih Kategori terlebih dahulu.', 'info');
+        return;
+    }
+    if (!navigator.onLine) { showToast('Perlu koneksi internet untuk menambah jenis kesalahan.', 'error'); return; }
+
+    const { value: jenisBaru } = await Swal.fire({
+        title: 'Tambah Jenis Kesalahan Baru',
+        html: `Untuk kategori: <b>${kategoriAktif}</b>`,
+        input: 'text',
+        inputLabel: 'Nama jenis kesalahan/kejadian',
+        inputPlaceholder: 'Contoh: Tidak mengikuti upacara',
+        showCancelButton: true,
+        confirmButtonText: 'Simpan',
+        cancelButtonText: 'Batal',
+        confirmButtonColor: '#171717',
+        cancelButtonColor: '#737373',
+        inputValidator: (value) => {
+            if (!value || !value.trim()) return 'Nama jenis tidak boleh kosong!';
+            const daftarBawaan = JENIS_KESALAHAN_MAP[kategoriAktif] || [];
+            const daftarCustom = jenisCustomCloud[kategoriAktif] || [];
+            if ([...daftarBawaan, ...daftarCustom].some(j => j.toLowerCase() === value.trim().toLowerCase())) return 'Jenis tersebut sudah ada di kategori ini!';
+        }
+    });
+    if (!jenisBaru) return;
+    const jenisBaruTrim = jenisBaru.trim();
+
+    const formData = new URLSearchParams({ aksi: 'tambah_jenis', kategori: kategoriAktif, jenis: jenisBaruTrim });
+    const res = await fetchToCloud(formData);
+    if (!res.success) { showToast(res.message || 'Gagal menyimpan jenis kesalahan.', 'error'); return; }
+
+    if (!jenisCustomCloud[kategoriAktif]) jenisCustomCloud[kategoriAktif] = [];
+    jenisCustomCloud[kategoriAktif].push(jenisBaruTrim);
+    populateJenisKesalahan(kategoriAktif);
+    document.getElementById('select-anekdot-jenis').value = jenisBaruTrim;
+    showToast('Jenis kesalahan baru disimpan ke spreadsheet.', 'success');
+});
+
+// BARU: Saat Jenis Kesalahan dipilih, otomatis isi/tambahkan ke Catatan Observasi
+document.getElementById('select-anekdot-jenis')?.addEventListener('change', (e) => {
+    const jenis = e.target.value;
+    if (!jenis || jenis === 'Lainnya') return;
+    const template = TEMPLATE_CATATAN_JENIS[jenis];
+    if (!template) return;
+    const textarea = document.getElementById('input-anekdot-isi');
+    if (!textarea) return;
+    // Kalau catatan masih kosong, isi otomatis. Kalau sudah ada isinya, tambahkan di akhir agar tidak menghapus tulisan guru.
+    textarea.value = textarea.value.trim() ? (textarea.value.trim() + ' ' + template) : template;
+});
+
+// Render pilihan Kategori (termasuk kategori kustom tersimpan) & Jenis Kesalahan awal saat halaman dimuat
+renderPilihanKategori();
+populateJenisKesalahan(document.getElementById('select-anekdot-kategori')?.value || 'Sosial-Emosional');
+
+function updateSelectAnekdotSiswa() {
+    const selectForm = document.getElementById('select-anekdot-siswa');
+    const selectFilter = document.getElementById('filter-anekdot-siswa');
+    if (!selectForm || !selectFilter) return;
+
+    const daftarUrut = [...dataSiswa].sort((a, b) => a.nama.localeCompare(b.nama));
+
+    const filterValue = selectFilter.value;
+    let optForm = '<option value="">Pilih Siswa...</option>';
+    let optFilter = '<option value="">Semua Siswa</option>';
+    daftarUrut.forEach(s => {
+        optForm += `<option value="${s.nis}">${s.nama} (${s.kelas})</option>`;
+        optFilter += `<option value="${s.nis}">${s.nama} (${s.kelas})</option>`;
+    });
+    selectForm.innerHTML = optForm;
+    selectFilter.innerHTML = optFilter;
+    if (daftarUrut.some(s => s.nis === filterValue)) selectFilter.value = filterValue;
+}
+
+document.getElementById('btn-tambah-anekdot')?.addEventListener('click', async () => {
+    const tanggal = document.getElementById('input-anekdot-tanggal')?.value;
+    const nis = document.getElementById('select-anekdot-siswa')?.value;
+    const kategori = document.getElementById('select-anekdot-kategori')?.value;
+    const jenis = document.getElementById('select-anekdot-jenis')?.value || '';
+    const rahasia = document.getElementById('select-anekdot-rahasia')?.value;
+    const isi = document.getElementById('input-anekdot-isi')?.value.trim();
+    const guru = document.getElementById('input-anekdot-guru')?.value.trim();
+
+    if (!tanggal || !nis || !isi || !guru) return showToast('Lengkapi tanggal, siswa, catatan, dan nama pencatat!', 'warning');
+
+    const siswa = dataSiswa.find(s => s.nis === nis);
+    if (!siswa) return showToast('Siswa tidak ditemukan.', 'error');
+
+    const id = `AN-${Date.now()}`;
+    const payload = { id, tanggal, nis: siswa.nis, nama: siswa.nama, kelas: siswa.kelas, kategori, jenis, rahasia, isi, guru };
+
+    const formData = new URLSearchParams({ ...payload, aksi: 'tambah_anekdot' });
+    const res = await fetchToCloud(formData);
+
+    if (res.success || res.message === "Offline_Mode") {
+        dataAnekdot.unshift(payload);
+        document.getElementById('input-anekdot-isi').value = '';
+        document.getElementById('input-anekdot-guru').value = '';
+        document.getElementById('select-anekdot-jenis').value = '';
+        showToast(res.success ? 'Catatan anekdot disimpan.' : 'Disimpan lokal (offline).', res.success ? 'success' : 'info');
+        renderAnekdot();
+    } else {
+        showToast(res.message, 'error');
+    }
+});
+
+window.hapusAnekdot = function(id) {
+    Swal.fire({
+        title: 'Hapus catatan ini?', text: 'Tindakan ini tidak bisa dibatalkan.', icon: 'warning',
+        showCancelButton: true, confirmButtonText: 'Ya, Hapus', confirmButtonColor: '#ef4444', cancelButtonText: 'Batal'
+    }).then(async (result) => {
+        if (!result.isConfirmed) return;
+        promptPIN(async (pin) => {
+            const formData = new URLSearchParams({ aksi: 'hapus_anekdot', id, pin });
+            const res = await fetchToCloud(formData);
+            if (res.success || res.message.includes("Berhasil") || res.message === "Offline_Mode") {
+                dataAnekdot = dataAnekdot.filter(a => a.id !== id);
+                showToast('Catatan dihapus.', 'success');
+                renderAnekdot();
+            } else {
+                showToast(res.message, 'error');
+            }
+        });
+    });
+}
+
+function renderAnekdot() {
+    const wrap = document.getElementById('anekdot-list-wrap');
+    if (!wrap) return;
+
+    const keyword = (document.getElementById('search-anekdot')?.value || '').toLowerCase();
+    const filterSiswa = document.getElementById('filter-anekdot-siswa')?.value || '';
+    const filterKategori = document.getElementById('filter-anekdot-kategori')?.value || '';
+
+    let hasil = [...dataAnekdot].sort((a, b) => new Date(b.tanggal) - new Date(a.tanggal));
+
+    if (filterSiswa) hasil = hasil.filter(a => a.nis === filterSiswa);
+    if (filterKategori) hasil = hasil.filter(a => a.kategori === filterKategori);
+    if (keyword) hasil = hasil.filter(a => a.nama.toLowerCase().includes(keyword) || a.isi.toLowerCase().includes(keyword));
+
+    if (hasil.length === 0) {
+        wrap.innerHTML = '<div class="empty-state">Belum ada catatan anekdot yang cocok.</div>';
+        return;
+    }
+
+    let html = '';
+    hasil.forEach(a => {
+        html += `
+        <div class="anekdot-card">
+            <div class="anekdot-card-head">
+                <div class="anekdot-siswa-info">
+                    <strong>${a.nama}</strong>
+                    <span>${a.kelas} &middot; ${a.tanggal}</span>
+                </div>
+                <div class="anekdot-meta">
+                    <div><span class="badge-kategori ${a.kategori}">${a.kategori}</span> ${a.jenis ? `<span class="badge-rahasia" style="background:var(--bg-main);">${a.jenis}</span>` : ''} <span class="badge-rahasia">${a.rahasia}</span></div>
+                </div>
+            </div>
+            <div class="anekdot-isi">${a.isi}</div>
+            <div class="anekdot-footer">
+                <span style="font-size:12px; color:var(--text-muted);"><i class="ph ph-user-circle"></i> Dicatat oleh: ${a.guru}</span>
+                ${currentRole !== 'siswa' ? `<button class="btn danger" style="padding:6px 12px; font-size:12px;" onclick="hapusAnekdot('${a.id}')"><i class="ph ph-trash"></i> Hapus</button>` : ''}
+            </div>
+        </div>`;
+    });
+    wrap.innerHTML = html;
+}
+
+document.getElementById('search-anekdot')?.addEventListener('input', renderAnekdot);
+document.getElementById('filter-anekdot-siswa')?.addEventListener('change', renderAnekdot);
+document.getElementById('filter-anekdot-kategori')?.addEventListener('change', renderAnekdot);
+
+document.getElementById('btn-export-anekdot-pdf')?.addEventListener('click', () => {
+    if (typeof window.jspdf === 'undefined') return showToast("Sistem PDF masih dimuat...", "warning");
+
+    const filterSiswa = document.getElementById('filter-anekdot-siswa')?.value || '';
+    const filterKategori = document.getElementById('filter-anekdot-kategori')?.value || '';
+    let hasil = [...dataAnekdot].sort((a, b) => new Date(a.tanggal) - new Date(b.tanggal));
+    if (filterSiswa) hasil = hasil.filter(a => a.nis === filterSiswa);
+    if (filterKategori) hasil = hasil.filter(a => a.kategori === filterKategori);
+
+    if (hasil.length === 0) return showToast("Tidak ada data untuk diekspor", "error");
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF('l', 'mm', 'a4');
+
+    doc.setFont("helvetica", "bold"); doc.setFontSize(16); doc.text("Laporan Catatan Anekdot Siswa", 14, 20);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(11);
+    const namaSiswaFilter = filterSiswa ? (dataSiswa.find(s => s.nis === filterSiswa)?.nama || '') : 'Semua Siswa';
+    doc.text(`Siswa: ${namaSiswaFilter}  |  Kategori: ${filterKategori || 'Semua'}`, 14, 28);
+
+    const tableData = hasil.map((a, i) => [i + 1, a.tanggal, a.nama, a.kelas, a.kategori, a.isi, a.guru]);
+
+    doc.autoTable({
+        startY: 35,
+        head: [['No', 'Tanggal', 'Nama', 'Kelas', 'Kategori', 'Catatan', 'Guru']],
+        body: tableData,
+        headStyles: { fillColor: [23, 23, 23] },
+        styles: { fontSize: 9, cellPadding: 4, overflow: 'linebreak' },
+        columnStyles: {
+            0: { cellWidth: 10, halign: 'center' },
+            1: { cellWidth: 22, halign: 'center' },
+            2: { cellWidth: 35 },
+            3: { cellWidth: 18, halign: 'center' },
+            4: { cellWidth: 30 },
+            5: { cellWidth: 'auto' },
+            6: { cellWidth: 30 }
+        },
+        theme: 'grid'
+    });
+
+    doc.save(`Catatan_Anekdot_${namaSiswaFilter.replace(/\s+/g, '_')}.pdf`);
+    showToast("Berhasil mengunduh PDF!", "success");
+});
+
+// ==========================================
 // TABS & UTILS
 // ==========================================
 document.querySelectorAll('.tab').forEach(tab => {
@@ -916,6 +1309,7 @@ document.querySelectorAll('.tab').forEach(tab => {
         tab.classList.add('active'); const p = document.getElementById(`tab-${tab.dataset.tab}`); if(p) p.classList.add('active');
         if (tab.dataset.tab !== 'absensi') stopKamera();
         if (tab.dataset.tab === 'kartu') renderKartu();
+        if (tab.dataset.tab === 'anekdot') renderAnekdot();
     });
 });
 document.getElementById('show-sudah')?.addEventListener('click', (e) => { e.target.classList.add('active'); document.getElementById('show-belum')?.classList.remove('active'); document.getElementById('attendance-table-wrap').style.display = 'block'; document.getElementById('belum-table-wrap').style.display = 'none'; });
@@ -971,8 +1365,9 @@ document.getElementById('file-import')?.addEventListener('change', (e) => {
             const cols = lines[i].split(/[,;]/); 
             if (cols.length >= 3) {
                 const nis = cols[0].replace(/["']/g, '').trim(); const nama = cols[1].replace(/["']/g, '').trim(); const kelas = cols[2].replace(/["']/g, '').trim();
+                const no_wa = cols[3] ? cols[3].replace(/["']/g, '').trim() : '';
                 if (nis && !dataSiswa.some(s => s.nis === nis)) {
-                    dataSiswa.push({ nis, nama, kelas }); count++; await fetchToCloud(new URLSearchParams({ aksi: 'tambah_siswa', nis, nama, kelas }));
+                    dataSiswa.push({ nis, nama, kelas, no_wa }); count++; await fetchToCloud(new URLSearchParams({ aksi: 'tambah_siswa', nis, nama, kelas, no_wa }));
                 }
             }
         }

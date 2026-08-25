@@ -89,6 +89,7 @@
         <button class="tab active" data-tab="siswa"><i class="ph ph-users"></i> Data Siswa</button>
         <button class="tab" data-tab="kartu"><i class="ph ph-identification-card"></i> Kartu QR</button>
         <button class="tab" data-tab="absensi"><i class="ph ph-scan"></i> Absensi & Laporan</button>
+        <button class="tab" data-tab="anekdot"><i class="ph ph-notebook"></i> Catatan Anekdot</button>
     </nav>
 
     <main>
@@ -118,6 +119,10 @@
                 <div class="field">
                     <label for="input-kelas">Kelas</label>
                     <input type="text" id="input-kelas" placeholder="Contoh: 6A">
+                </div>
+                <div class="field">
+                    <label for="input-wa">No. WA Orang Tua</label>
+                    <input type="text" id="input-wa" placeholder="Contoh: 081234567890" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
                 </div>
                 <button class="btn" id="btn-tambah-siswa"><i class="ph ph-plus"></i> Simpan</button>
                 <button class="btn secondary" id="btn-batal-edit" style="display: none;"><i class="ph ph-x"></i> Batal</button>
@@ -262,6 +267,96 @@
                     <div id="belum-table-wrap" style="display: none;"></div>
                 </div>
             </div>
+        </section>
+
+        <!-- TAB: CATATAN ANEKDOT -->
+        <section id="tab-anekdot" class="tab-panel">
+            <div class="panel-header">
+                <div>
+                    <h2 class="panel-title">Catatan Anekdot Siswa</h2>
+                    <p class="panel-hint">Rekam observasi perilaku, sosial-emosional, prestasi, atau kejadian penting siswa.</p>
+                </div>
+            </div>
+
+            <!-- FORM INPUT ANEKDOT -->
+            <div class="form-row">
+                <div class="field">
+                    <label for="input-anekdot-tanggal">Tanggal Kejadian</label>
+                    <input type="date" id="input-anekdot-tanggal">
+                </div>
+                <div class="field" style="flex: 2;">
+                    <label for="select-anekdot-siswa">Siswa</label>
+                    <select id="select-anekdot-siswa"><option value="">Pilih Siswa...</option></select>
+                </div>
+                <div class="field">
+                    <label for="select-anekdot-rahasia">Visibilitas</label>
+                    <select id="select-anekdot-rahasia">
+                        <option value="Umum">Umum (Guru & Orang Tua)</option>
+                        <option value="Internal">Internal (Hanya Guru)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="field field-with-add">
+                    <label for="select-anekdot-kategori">Kategori</label>
+                    <div class="input-with-add">
+                        <select id="select-anekdot-kategori">
+                            <option value="Sosial-Emosional">Sosial-Emosional</option>
+                            <option value="Akademik">Akademik</option>
+                            <option value="Kedisiplinan">Kedisiplinan</option>
+                            <option value="Prestasi">Prestasi</option>
+                            <option value="Kesehatan">Kesehatan</option>
+                        </select>
+                        <button type="button" class="btn secondary btn-add-inline" id="btn-tambah-kategori" title="Tambah Kategori Baru"><i class="ph ph-plus"></i></button>
+                    </div>
+                </div>
+                <div class="field field-with-add">
+                    <label for="select-anekdot-jenis">Jenis Kesalahan</label>
+                    <div class="input-with-add">
+                        <select id="select-anekdot-jenis">
+                            <option value="">Pilih Jenis...</option>
+                        </select>
+                        <button type="button" class="btn secondary btn-add-inline" id="btn-tambah-jenis" title="Tambah Jenis Kesalahan Baru"><i class="ph ph-plus"></i></button>
+                    </div>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="field" style="flex: 3;">
+                    <label for="input-anekdot-isi">Catatan Observasi</label>
+                    <textarea id="input-anekdot-isi" rows="3" placeholder="Tuliskan kejadian/observasi secara objektif, apa adanya, tanpa penilaian pribadi..." style="width:100%; padding:12px 14px; border-radius:10px; border:1px solid var(--border); background: var(--bg-main); font-family: inherit; font-size: 14px; resize: vertical;"></textarea>
+                </div>
+                <div class="field">
+                    <label for="input-anekdot-guru">Dicatat Oleh</label>
+                    <input type="text" id="input-anekdot-guru" placeholder="Nama Guru">
+                </div>
+                <button class="btn" id="btn-tambah-anekdot" style="align-self: flex-end;"><i class="ph ph-plus"></i> Simpan</button>
+            </div>
+
+            <!-- SEARCH & FILTER -->
+            <div style="display: flex; gap: 10px; margin: 25px 0 20px 0; flex-wrap: wrap;">
+                <div class="search-bar" style="flex: 2; margin-bottom: 0;">
+                    <i class="ph ph-magnifying-glass"></i>
+                    <input type="text" id="search-anekdot" placeholder="Cari nama siswa atau isi catatan...">
+                </div>
+                <div class="field" style="flex: 1; min-width: 150px;">
+                    <select id="filter-anekdot-siswa" style="height: 100%; border-radius: 10px;">
+                        <option value="">Semua Siswa</option>
+                    </select>
+                </div>
+                <div class="field" style="flex: 1; min-width: 150px;">
+                    <select id="filter-anekdot-kategori" style="height: 100%; border-radius: 10px;">
+                        <option value="">Semua Kategori</option>
+                        <option value="Sosial-Emosional">Sosial-Emosional</option>
+                        <option value="Akademik">Akademik</option>
+                        <option value="Kedisiplinan">Kedisiplinan</option>
+                        <option value="Prestasi">Prestasi</option>
+                        <option value="Kesehatan">Kesehatan</option>
+                    </select>
+                </div>
+                <button class="btn secondary" id="btn-export-anekdot-pdf"><i class="ph ph-file-pdf"></i> Ekspor PDF</button>
+            </div>
+
+            <div id="anekdot-list-wrap"></div>
         </section>
     </main>
 </div>
