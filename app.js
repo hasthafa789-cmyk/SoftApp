@@ -143,7 +143,7 @@ document.getElementById('btn-login')?.addEventListener('click', () => {
 });
 
 // MASUKKAN URL GOOGLE APPS SCRIPT ANDA DI SINI
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyulfjgIf_ivcq7He4rmgHUEwszIrPOv7-3rjUNpZ_joFaPJCGuPwhEQi_F4wkXW9nJrw/exec';
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwwEzYpEaWJGVisOqmmxXRMuJpvTS17m7R-kN_8YtZeBxeWxZv_4KpDK1yOPCf2RuBDGQ/exec';
 
 // ==========================================
 // SWEETALERT2 & UTILS PENDUKUNG
