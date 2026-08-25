@@ -239,7 +239,11 @@ async function syncDataLokalDenganCloud() {
         showToast("Anda Sedang Offline! Gagal memuat data.", "error");
         return;
     }
-    setLoading(true);
+    
+    // KUNCI PERUBAHAN: Matikan full-screen loading, nyalakan skeleton!
+    // setLoading(true); <-- HAPUS ATAU KOMENTARI BARIS INI
+    tampilkanSkeleton(); 
+    
     try {
         const response = await fetch(GOOGLE_SCRIPT_URL);
         const textData = await response.text();
@@ -247,23 +251,28 @@ async function syncDataLokalDenganCloud() {
         try { dataCloud = JSON.parse(textData); } catch (e) { throw new Error("Respons bukan JSON"); }
         
         if (dataCloud) {
-            // KUNCI: Menimpa data secara mutlak. Jika di spreadsheet dihapus, web akan ikut terhapus!
             dataSiswa = dataCloud.siswa || [];
             dataAbsen = dataCloud.absensi || {};
             dataAnekdot = dataCloud.anekdot || [];
-            // BARU: Kategori & Jenis Kesalahan kustom kini disimpan di spreadsheet (Sheet "Master Kategori" & "Master Jenis"),
-            // bukan di localStorage HP, agar sinkron sama persis di semua perangkat.
+            
             kategoriCustomCloud = dataCloud.kategoriCustom || [];
             jenisCustomCloud = dataCloud.jenisCustom || {};
+            
             renderPilihanKategori();
             populateJenisKesalahan(document.getElementById('select-anekdot-kategori')?.value || 'Sosial-Emosional');
-            updateUI();
+            
+            // updateUI() akan otomatis menimpa skeleton HTML dengan data asli
+            updateUI(); 
         }
     } catch (error) { 
         console.log('Gagal menarik data dari server'); 
         showToast('Koneksi ke Spreadsheet Gagal', 'error');
+        // Jika gagal, tampilkan UI kosong agar skeleton hilang
+        updateUI(); 
     }
-    finally { setLoading(false); }
+    finally { 
+        // setLoading(false); <-- HAPUS ATAU KOMENTARI BARIS INI
+    }
 }
 
 function simpanData() { 
@@ -1486,3 +1495,54 @@ window.renderAnalitik = function() {
 
 // Tambahkan pemanggilan fungsi ini di dalam fungsi updateUI()
 // renderAnalitik();
+
+// ==========================================
+// FUNGSI SKELETON LOADER
+// ==========================================
+function tampilkanSkeleton() {
+    const barisSkeleton = `
+        <tr>
+            <td><div class="skeleton skeleton-text short"></div></td>
+            <td><div class="skeleton skeleton-text"></div></td>
+            <td><div class="skeleton skeleton-text short"></div></td>
+            <td><div class="skeleton skeleton-text short"></div></td>
+            <td><div class="skeleton skeleton-text short"></div></td>
+        </tr>
+    `;
+
+    // 1. Skeleton untuk Tabel Master Siswa
+    const wrapSiswa = document.getElementById('siswa-table-wrap');
+    if(wrapSiswa) {
+        wrapSiswa.innerHTML = `
+            <table>
+                <tr><th>NIS</th><th>Nama Lengkap</th><th>Kelas</th><th>No. WA</th><th>Aksi</th></tr>
+                ${barisSkeleton.repeat(5)} 
+            </table>`;
+    }
+
+    // 2. Skeleton untuk Tabel Absensi Harian (Sudah Absen)
+    const wrapAbsensi = document.getElementById('attendance-table-wrap');
+    if(wrapAbsensi) {
+        wrapAbsensi.innerHTML = `
+            <table>
+                <tr><th>Waktu</th><th>Nama</th><th>Kelas</th><th>Status</th></tr>
+                ${barisSkeleton.repeat(4)}
+            </table>`;
+    }
+    
+    // 3. Skeleton untuk Tabel Absensi Harian (Belum Absen)
+    const wrapBelum = document.getElementById('belum-table-wrap');
+    if(wrapBelum) {
+        wrapBelum.innerHTML = `
+            <table>
+                <tr><th>NIS</th><th>Nama Lengkap</th><th>Kelas</th></tr>
+                ${barisSkeleton.repeat(4)}
+            </table>`;
+    }
+
+    // 4. Skeleton untuk 5 Kotak Dashboard (Hanya jika data masih kosong)
+    if (dataSiswa.length === 0) {
+        const cards = document.querySelectorAll('.stat-card h3');
+        cards.forEach(card => card.innerHTML = '<div class="skeleton skeleton-text title"></div>');
+    }
+}
