@@ -907,3 +907,50 @@ body.dark-theme .skeleton::after {
 .skeleton-text { height: 16px; width: 100%; }
 .skeleton-text.short { width: 40%; }
 .skeleton-text.title { height: 28px; width: 60%; margin: 0 auto; }
+
+/* =========================================================
+   UX UPGRADE: NATIVE APP FEEL (STANDAR IOS/ANDROID)
+   ========================================================= */
+
+/* 1. ANTI-HIGHLIGHT: Mencegah teks tersorot biru saat diklik cepat */
+.btn, .tab, .stat-card, .qr-card, .att-toggles, .masthead, .insight-card {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent; /* Hilangkan kedip abu-abu di Android */
+}
+
+
+/* 3. FLOATING BOTTOM NAVIGATION: Menu bawah mengambang ala aplikasi modern */
+@media (max-width: 768px) {
+    .tabs {
+        position: fixed !important;
+        bottom: 20px !important; /* Mengambang dari dasar layar */
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        width: 92% !important;
+        border-radius: 24px !important;
+        background: rgba(255, 255, 255, 0.85) !important;
+        backdrop-filter: blur(24px) !important;
+        -webkit-backdrop-filter: blur(24px) !important;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.15) !important;
+        border: 1px solid rgba(255, 255, 255, 0.6) !important;
+        padding: 8px 5px !important;
+        padding-bottom: env(safe-area-inset-bottom, 8px) !important; /* Mendukung poni/garis bawah iPhone */
+    }
+    
+    /* Menu Mengambang untuk Mode Gelap */
+    body.dark-theme .tabs {
+        background: rgba(24, 24, 27, 0.85) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.6) !important;
+    }
+
+    /* Efek gelembung pada ikon yang sedang aktif */
+    .tab { border-radius: 16px; padding: 10px 5px !important; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+    .tab.active { background: rgba(0, 0, 0, 0.05); transform: translateY(-3px); }
+    body.dark-theme .tab.active { background: rgba(255, 255, 255, 0.1); }
+    
+    /* Memberi jarak bawah ekstra agar konten tidak tertutup menu yang mengambang */
+    main { padding-bottom: 120px !important; }
+}

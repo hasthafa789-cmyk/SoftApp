@@ -1605,3 +1605,34 @@ document.getElementById('btn-tambah-guru')?.addEventListener('click', async () =
     renderPilihanGuru(guruBaru);
     showToast('Nama guru baru disimpan ke spreadsheet.', 'success');
 });
+
+// ==========================================
+// UX UPGRADE: HAPTIC FEEDBACK (EFEK GETAR NATIVE)
+// ==========================================
+
+// Fungsi pemanggil mesin getar di HP (Hanya bekerja di Android, iOS memblokir getaran via web)
+function hapticClick(type = 'light') {
+    if (!navigator.vibrate) return; // Abaikan jika perangkat tidak mendukung
+    
+    if (type === 'light') {
+        navigator.vibrate(40); // Getaran sangat halus (40 milidetik)
+    } else if (type === 'heavy') {
+        navigator.vibrate([50, 50, 50]); // Getaran beruntun untuk pesan sukses/error
+    }
+}
+
+// Deteksi otomatis: Berikan getaran halus ke SETIAP tombol yang disentuh
+document.addEventListener('click', (e) => {
+    // Cari apakah elemen yang diklik adalah tombol, tab, atau kartu
+    const isButton = e.target.closest('.btn, .tab, .stat-card, .att-btn, .qr-card');
+    if (isButton) {
+        hapticClick('light');
+    }
+});
+
+// Modifikasi SweetAlert / Toast agar ikut bergetar saat muncul pesan sukses/error
+const originalShowToast = showToast;
+window.showToast = function(title, icon = 'success') {
+    hapticClick(icon === 'error' ? 'heavy' : 'light');
+    originalShowToast(title, icon);
+}
