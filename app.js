@@ -1174,10 +1174,24 @@ document.getElementById('btn-tambah-anekdot')?.addEventListener('click', async (
     const kategori = document.getElementById('select-anekdot-kategori')?.value;
     const jenis = document.getElementById('select-anekdot-jenis')?.value || '';
     const rahasia = document.getElementById('select-anekdot-rahasia')?.value;
-    const isi = document.getElementById('input-anekdot-isi')?.value.trim();
+    // UBAH: Gunakan 'let' agar nilainya bisa kita ubah/salin otomatis nanti
+    let isi = document.getElementById('input-anekdot-isi')?.value.trim();
     const guru = document.getElementById('input-anekdot-guru')?.value.trim();
 
-    if (!tanggal || !nis || !isi || !guru) return showToast('Lengkapi tanggal, siswa, catatan, dan nama pencatat!', 'warning');
+    // 1. Cek data wajib mutlak (TIDAK TERMASUK kotak catatan)
+    if (!tanggal || !nis || !guru) {
+        return showToast('Lengkapi tanggal, siswa, dan nama pencatat!', 'warning');
+    }
+
+    // 2. LOGIKA PINTAR: Jika pilih Lainnya/Kosong, maka kotak catatan WAJIB diisi manual
+    if ((jenis === '' || jenis === 'Lainnya') && !isi) {
+        return showToast('Catatan Observasi wajib diketik jika memilih "Lainnya"!', 'warning');
+    }
+
+    // 3. AUTO-FILL: Jika guru pilih dropdown tapi malas mengetik, salin teks dropdown ke catatan
+    if (jenis !== '' && jenis !== 'Lainnya' && !isi) {
+        isi = jenis;
+    }
 
     const siswa = dataSiswa.find(s => s.nis === nis);
     if (!siswa) return showToast('Siswa tidak ditemukan.', 'error');
