@@ -143,7 +143,7 @@ document.getElementById('btn-login')?.addEventListener('click', () => {
 });
 
 // MASUKKAN URL GOOGLE APPS SCRIPT ANDA DI SINI
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyQ-7A5cAEoGvHW57VulwkPolSuvotg7dGfy1At2l7Ec3ez9nD7rwVfQ6ogMZlv52kvMw/exec';
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxAlZX02z4rt8NECFNQ06wNtEpOt0VB1VvjdIfu-MAwoCURBNMLjnApDSJZuGSaZ0bgPA/exec';
 
 // ==========================================
 // SWEETALERT2 & UTILS PENDUKUNG
@@ -254,11 +254,13 @@ async function syncDataLokalDenganCloud() {
             dataSiswa = dataCloud.siswa || [];
             dataAbsen = dataCloud.absensi || {};
             dataAnekdot = dataCloud.anekdot || [];
+            guruCustomCloud = dataCloud.guruCustom || [];
             
             kategoriCustomCloud = dataCloud.kategoriCustom || [];
             jenisCustomCloud = dataCloud.jenisCustom || {};
             
             renderPilihanKategori();
+            renderPilihanGuru();
             populateJenisKesalahan(document.getElementById('select-anekdot-kategori')?.value || 'Sosial-Emosional');
             
             // updateUI() akan otomatis menimpa skeleton HTML dengan data asli
@@ -1019,6 +1021,7 @@ const TEMPLATE_CATATAN_JENIS = {
 // di satu perangkat, langsung sinkron dan muncul juga di perangkat lain setelah refresh/sync.
 let kategoriCustomCloud = [];
 let jenisCustomCloud = {};
+let guruCustomCloud = [];
 
 // Gabungan semua kategori: bawaan sistem + kategori kustom dari spreadsheet
 function getSemuaKategori() {
@@ -1560,3 +1563,45 @@ function tampilkanSkeleton() {
         cards.forEach(card => card.innerHTML = '<div class="skeleton skeleton-text title"></div>');
     }
 }
+
+// --- FITUR BARU: TOMBOL TAMBAH GURU ---
+function renderPilihanGuru(selectedValue) {
+    const selectGuru = document.getElementById('input-anekdot-guru');
+    if (!selectGuru) return;
+    const nilaiSekarang = selectedValue || selectGuru.value;
+    let opt = '<option value="">Pilih Guru...</option>';
+    guruCustomCloud.forEach(g => { opt += `<option value="${g}">${g}</option>`; });
+    selectGuru.innerHTML = opt;
+    if (guruCustomCloud.includes(nilaiSekarang)) selectGuru.value = nilaiSekarang;
+}
+
+document.getElementById('btn-tambah-guru')?.addEventListener('click', async () => {
+    if (!navigator.onLine) { showToast('Perlu koneksi internet untuk menambah guru.', 'error'); return; }
+
+    const { value: namaBaru } = await Swal.fire({
+        title: 'Tambah Nama Guru',
+        input: 'text',
+        inputLabel: 'Nama Lengkap Guru',
+        inputPlaceholder: 'Contoh: Bapak Fajar (Kepala Sekolah)',
+        showCancelButton: true,
+        confirmButtonText: 'Simpan',
+        cancelButtonText: 'Batal',
+        confirmButtonColor: '#171717',
+        cancelButtonColor: '#737373',
+        inputValidator: (value) => {
+            if (!value || !value.trim()) return 'Nama guru tidak boleh kosong!';
+            if (guruCustomCloud.some(g => g.toLowerCase() === value.trim().toLowerCase())) return 'Guru tersebut sudah ada!';
+        }
+    });
+    
+    if (!namaBaru) return;
+    const guruBaru = namaBaru.trim();
+
+    const formData = new URLSearchParams({ aksi: 'tambah_guru', guru: guruBaru });
+    const res = await fetchToCloud(formData);
+    if (!res.success) { showToast(res.message || 'Gagal menyimpan guru.', 'error'); return; }
+
+    guruCustomCloud.push(guruBaru);
+    renderPilihanGuru(guruBaru);
+    showToast('Nama guru baru disimpan ke spreadsheet.', 'success');
+});

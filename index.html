@@ -325,12 +325,15 @@
                     <label for="input-anekdot-isi">Catatan Observasi</label>
                     <textarea id="input-anekdot-isi" rows="3" placeholder="Tuliskan kejadian/observasi secara objektif, apa adanya, tanpa penilaian pribadi..." style="width:100%; padding:12px 14px; border-radius:10px; border:1px solid var(--border); background: var(--bg-main); font-family: inherit; font-size: 14px; resize: vertical;"></textarea>
                 </div>
-                <div class="field">
-                    <label for="input-anekdot-guru">Dicatat Oleh</label>
-                    <input type="text" id="input-anekdot-guru" placeholder="Nama Guru">
-                </div>
-                <button class="btn" id="btn-tambah-anekdot" style="align-self: flex-end;"><i class="ph ph-plus"></i> Simpan</button>
-            </div>
+                <div class="field field-with-add">
+    <label for="input-anekdot-guru">Dicatat Oleh</label>
+    <div class="input-with-add">
+        <select id="input-anekdot-guru">
+            <option value="">Pilih Guru...</option>
+        </select>
+        <button type="button" class="btn secondary btn-add-inline" id="btn-tambah-guru" title="Tambah Guru Baru"><i class="ph ph-plus"></i></button>
+    </div>
+</div>
 
             <!-- SEARCH & FILTER -->
             <div style="display: flex; gap: 10px; margin: 25px 0 20px 0; flex-wrap: wrap;">
