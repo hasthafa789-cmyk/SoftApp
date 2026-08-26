@@ -1069,3 +1069,36 @@ body.dark-theme .skeleton::after {
     
     .network-status.show { top: 75px !important; }
 }
+
+/* =========================================================
+   PERBAIKAN LOGO LOGIN SCREEN (PROPORTIONAL & MEWAH)
+   ========================================================= */
+
+/* Mengunci ukuran logo di layar login agar tetap besar dan di tengah */
+#login-screen .stamp-badge {
+    width: 85px !important;
+    height: 85px !important;
+    margin: 0 auto 24px auto !important; /* Memaksa posisi ke tengah */
+    padding: 12px !important;
+    border-radius: 20px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+#login-screen .app-logo {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important; /* Mencegah gambar gepeng / melar */
+}
+
+/* Membatasi aturan sebelumnya HANYA untuk Header, jangan ganggu Login */
+@media (max-width: 768px) {
+    .masthead .stamp-badge { 
+        width: 40px !important; 
+        height: 40px !important; 
+        padding: 6px !important; 
+        border-radius: 10px !important; 
+        margin: 0 !important; 
+    }
+}
