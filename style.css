@@ -1001,20 +1001,54 @@ body.dark-theme .skeleton::after {
         position: sticky !important;
         top: 0 !important;
         width: 100% !important;
-        left: 0 !important;
-        transform: none !important;
+        box-sizing: border-box !important; /* Cegah header melebar keluar layar */
         border-radius: 0 !important;
         border: none !important;
         border-bottom: 1px solid rgba(0,0,0,0.08) !important;
         background: rgba(252, 252, 252, 0.85) !important;
         backdrop-filter: blur(24px) !important;
         -webkit-backdrop-filter: blur(24px) !important;
-        padding: 15px 20px !important;
-        flex-direction: row !important;
+        padding: 12px 16px !important;
+        
+        /* PAKSA SUSUNAN KIRI-KANAN (Membatalkan kode lama) */
+        display: flex !important;
+        flex-direction: row !important; 
+        align-items: center !important;
         justify-content: space-between !important;
         z-index: 8000 !important;
-        box-shadow: none !important;
     }
+    
+    body.dark-theme .masthead {
+        background: rgba(9, 9, 11, 0.85) !important;
+        border-bottom: 1px solid rgba(255,255,255,0.08) !important;
+    }
+    
+    /* PERBAIKAN: Paksa Logo & Judul menyamping, jangan menumpuk atas-bawah */
+    .masthead > div:first-child { 
+        display: flex !important;
+        flex-direction: row !important; 
+        align-items: center !important; 
+        text-align: left !important;
+        gap: 12px !important;
+    }
+    
+    /* Merapikan Ukuran Logo & Teks */
+    .stamp-badge { width: 40px !important; height: 40px !important; padding: 6px !important; border-radius: 10px !important; margin: 0 !important; }
+    .masthead h1 { font-size: 17px !important; margin: 0 !important; letter-spacing: -0.5px !important; display: flex !important; align-items: center !important; }
+    .badge-ultimate { font-size: 9px !important; padding: 3px 6px !important; margin-left: 6px !important; }
+    .subtitle { display: none !important; } /* Sembunyikan slogan di HP agar luas */
+    
+    /* PERBAIKAN: Rapikan tombol (Refresh & Bulan) di ujung kanan */
+    .masthead > div:last-child {
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        justify-content: flex-end !important;
+        gap: 8px !important;
+        margin-left: auto !important;
+        width: auto !important;
+    }
+    .masthead .btn { padding: 8px !important; border-radius: 50% !important; margin: 0 !important; }
     
     body.dark-theme .masthead {
         background: rgba(9, 9, 11, 0.85) !important;
