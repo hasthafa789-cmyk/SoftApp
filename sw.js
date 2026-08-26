@@ -1,4 +1,5 @@
-const CACHE_NAME = 'softapp-pro-cloud-v1'; // Nama cache baru untuk mereset yang lama
+const CACHE_NAME = 'softapp-pro-live';
+
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
@@ -7,54 +8,38 @@ const ASSETS_TO_CACHE = [
     './manifest.json'
 ];
 
-// Saat aplikasi pertama kali diinstal
 self.addEventListener('install', (event) => {
-    // Memaksa Service Worker baru untuk langsung mengambil alih tanpa menunggu
-    self.skipWaiting(); 
-    event.waitUntil(
-        caches.open(CACHE_NAME).then((cache) => {
-            console.log('Menyiapkan cache cadangan untuk mode Offline...');
-            return cache.addAll(ASSETS_TO_CACHE);
-        })
-    );
+    self.skipWaiting(); // Langsung aktif tanpa menunggu
+    event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS_TO_CACHE)));
 });
 
-// Menghapus SEMUA cache versi lama secara otomatis
 self.addEventListener('activate', (event) => {
+    // Hapus semua cache lama setiap kali aplikasi dibuka
     event.waitUntil(
-        caches.keys().then((cacheNames) => {
-            return Promise.all(
-                cacheNames.map((cacheName) => {
-                    if (cacheName !== CACHE_NAME) {
-                        console.log('Menghapus cache PWA versi lama:', cacheName);
-                        return caches.delete(cacheName);
-                    }
-                })
-            );
-        })
+        caches.keys().then((keys) => Promise.all(
+            keys.map((key) => {
+                if (key !== CACHE_NAME) return caches.delete(key);
+            })
+        ))
     );
-    // Memastikan tab browser yang sedang terbuka langsung menggunakan versi baru
-    self.clients.claim(); 
+    self.clients.claim();
 });
 
-// STRATEGI BARU: NETWORK-FIRST (Utamakan Cloud/Internet, Cache hanya untuk cadangan saat Offline)
 self.addEventListener('fetch', (event) => {
-    // Abaikan permintaan ke Google Apps Script
     if (event.request.url.includes('script.google.com')) return;
 
     event.respondWith(
-        fetch(event.request)
+        // STRATEGI ULTRA-LIVE: Paksa ambil dari internet tanpa membaca cache browser (cache: 'no-store')
+        fetch(event.request, { cache: 'no-store' })
             .then((networkResponse) => {
-                // Jika internet menyala dan berhasil mengambil file terbaru dari Cloud,
-                // simpan diam-diam ke dalam cache untuk persiapan jika sewaktu-waktu Offline.
+                // Jika berhasil dapat yang baru, simpan diam-diam untuk mode offline
                 return caches.open(CACHE_NAME).then((cache) => {
                     cache.put(event.request, networkResponse.clone());
                     return networkResponse;
                 });
             })
             .catch(() => {
-                // JIKA OFFLINE (Gagal fetch dari internet), barulah ambil dari Cache HP
-                console.log('Sedang offline, mengambil dari cache PWA:', event.request.url);
+                // HANYA JIKA OFFLINE (Tidak ada sinyal), baru pakai cache HP
                 return caches.match(event.request);
             })
     );

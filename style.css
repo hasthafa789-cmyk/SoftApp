@@ -956,20 +956,22 @@ body.dark-theme .skeleton::after {
 }
 
 /* =========================================================
-   UX UPGRADE 2.0: FLOATING HEADER & ANTI-TERTUTUP
+   UX UPGRADE: NATIVE APP FEEL (STANDAR IOS/ANDROID)
    ========================================================= */
 
-@media (max-width: 768px) {
-    /* 1. MEMBERI RUANG KOSONG AGAR KONTEN TIDAK TERTUTUP MENU */
-    main {
-        padding-top: 100px !important;    /* Mendorong konten turun agar tidak tertabrak Header melayang */
-        padding-bottom: 140px !important; /* Mendorong konten naik agar tidak tertutup Menu Bawah */
-    }
+/* 1. ANTI-HIGHLIGHT: Mencegah teks tersorot saat diklik cepat */
+.btn, .tab, .stat-card, .qr-card, .att-toggles, .masthead, .insight-card {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
 
-    /* 2. MENYULAP HEADER (ATAS) MENJADI FLOATING PILL */
-    .masthead {
+/* 2. FLOATING BOTTOM NAVIGATION (Hanya Menu Bawah yang melayang) */
+@media (max-width: 768px) {
+    .tabs {
         position: fixed !important;
-        top: 15px !important;
+        bottom: 20px !important; 
         left: 50% !important;
         transform: translateX(-50%) !important;
         width: 92% !important;
@@ -979,47 +981,57 @@ body.dark-theme .skeleton::after {
         -webkit-backdrop-filter: blur(24px) !important;
         box-shadow: 0 10px 40px rgba(0,0,0,0.15) !important;
         border: 1px solid rgba(255, 255, 255, 0.6) !important;
-        z-index: 8000 !important;
-        
-        /* Merapikan posisi dari atas-bawah menjadi kiri-kanan (Kompak) */
-        padding: 10px 16px !important;
-        flex-direction: row !important;
-        text-align: left !important;
-        justify-content: space-between !important;
-        gap: 10px !important;
+        padding: 8px 5px !important;
+        padding-bottom: env(safe-area-inset-bottom, 8px) !important;
+        z-index: 9000 !important;
     }
-
-    /* Floating Header khusus Mode Gelap */
-    body.dark-theme .masthead {
+    
+    body.dark-theme .tabs {
         background: rgba(24, 24, 27, 0.85) !important;
         border: 1px solid rgba(255, 255, 255, 0.1) !important;
         box-shadow: 0 10px 40px rgba(0,0,0,0.6) !important;
     }
 
-    /* 3. MERAPIKAN ISI HEADER AGAR MUAT DI DALAM "PIL" MELAYANG */
-    .masthead > div:first-child { 
-        flex-direction: row !important; 
-        align-items: center !important; 
-        gap: 12px !important;
+    .tab { border-radius: 16px; padding: 10px 5px !important; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+    .tab.active { background: rgba(0, 0, 0, 0.05); transform: translateY(-3px); }
+    body.dark-theme .tab.active { background: rgba(255, 255, 255, 0.1); }
+    
+    /* 3. STICKY HEADER PROFESSIONAL (Penuh kiri-kanan, Kaca Buram) */
+    .masthead {
+        position: sticky !important;
+        top: 0 !important;
+        width: 100% !important;
+        left: 0 !important;
+        transform: none !important;
+        border-radius: 0 !important;
+        border: none !important;
+        border-bottom: 1px solid rgba(0,0,0,0.08) !important;
+        background: rgba(252, 252, 252, 0.85) !important;
+        backdrop-filter: blur(24px) !important;
+        -webkit-backdrop-filter: blur(24px) !important;
+        padding: 15px 20px !important;
+        flex-direction: row !important;
+        justify-content: space-between !important;
+        z-index: 8000 !important;
+        box-shadow: none !important;
     }
     
-    /* Mengecilkan Logo Sedikit */
-    .stamp-badge { width: 42px !important; height: 42px !important; padding: 6px !important; border-radius: 12px !important; }
-    
-    /* Mengecilkan Teks Judul & Sembunyikan Subtitle agar tidak sesak */
-    .masthead h1 { font-size: 16px !important; margin: 0 !important; }
-    .badge-ultimate { font-size: 9px !important; padding: 3px 6px !important; margin-left: 4px !important; }
-    .subtitle { display: none !important; } 
-    
-    /* Merapikan Tombol Sinkronisasi & Mode Gelap di Kanan */
-    .masthead > div:last-child { 
-        margin-left: auto !important; 
-        width: auto !important; 
-        gap: 6px !important;
+    body.dark-theme .masthead {
+        background: rgba(9, 9, 11, 0.85) !important;
+        border-bottom: 1px solid rgba(255,255,255,0.08) !important;
     }
-    .masthead .btn { padding: 8px !important; border-radius: 50% !important; }
-    .masthead .btn i { font-size: 18px !important; }
-
-    /* 4. MENURUNKAN INDIKATOR JARINGAN (ONLINE/OFFLINE) AGAR TIDAK NUMPUK */
-    .network-status.show { top: 90px !important; }
+    
+    /* Merapikan Isi Header */
+    .stamp-badge { width: 45px !important; height: 45px !important; padding: 8px !important; border-radius: 12px !important; }
+    .masthead h1 { font-size: 18px !important; margin: 0 !important; letter-spacing: -0.5px !important;}
+    .badge-ultimate { font-size: 10px !important; padding: 3px 8px !important; margin-left: 6px !important; }
+    .subtitle { display: none !important; } /* Hilangkan slogan agar tidak kepanjangan di HP */
+    
+    /* 4. RUANG AMAN KONTEN (Anti Tertutup) */
+    main { 
+        padding-top: 15px !important; 
+        padding-bottom: 130px !important; /* Ruang aman ekstra di bawah agar konten tidak tertutup menu melayang */
+    }
+    
+    .network-status.show { top: 75px !important; }
 }
