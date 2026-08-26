@@ -1,9 +1,9 @@
 :root {
     /* Tema Monokrom Premium */
-    --primary: #171717;       /* Hitam Pekat */
-    --primary-hover: #262626; /* Hitam Terang */
-    --primary-light: #f5f5f5; /* Abu-abu sangat terang */
-    --bg-main: #fcfcfc;       /* Putih tulang */
+    --primary: #171717;       
+    --primary-hover: #262626; 
+    --primary-light: #f5f5f5; 
+    --bg-main: #fcfcfc;       
     --bg-card: #ffffff;
     --text-main: #171717;
     --text-muted: #737373;
@@ -23,1082 +23,367 @@
     --shadow-primary: 0 4px 14px 0 rgba(0, 0, 0, 0.15);
 }
 
-body.dark-theme {
-    --bg-main: #0a0a0a;
-    --bg-card: #171717;
-    --text-main: #f5f5f5;
-    --text-muted: #a3a3a3;
-    --border: #262626;
-    --primary: #ffffff;       /* Tombol Utama jadi Putih di Mode Gelap */
-    --primary-hover: #e5e5e5;
-    --primary-light: #262626;
-}
-
-/* Memastikan tulisan di tombol terbaca saat Mode Gelap */
-body.dark-theme .btn { color: #0a0a0a; font-weight: 700; }
-body.dark-theme .btn.secondary { background: transparent; color: var(--text-main); }
-body.dark-theme .btn.danger { background: #404040; color: #ffffff; }
-body.dark-theme .btn.warning { background: transparent; color: var(--text-main); border: 1px solid var(--text-muted); }
-body.dark-theme .btn.warning:hover { background: rgba(255,255,255,0.1); }
-
-/* KUNCI: Membuat Logo Hitam otomatis menjadi Putih saat Dark Mode */
-body.dark-theme .app-logo {
-    filter: invert(1);
-}
-
-/* ================= BARU: INDIKATOR JARINGAN & FULLSCREEN ================= */
-.network-status {
-    position: fixed; top: -50px; left: 50%; transform: translateX(-50%);
-    padding: 6px 16px; border-radius: 20px; font-size: 12px; font-weight: 700;
-    color: white; z-index: 9999; display: flex; align-items: center; gap: 6px;
-    transition: top 0.4s cubic-bezier(0.16, 1, 0.3, 1); box-shadow: var(--shadow-md);
-}
-.network-status.show { top: 15px; }
-.network-status.online { background: var(--success); }
-.network-status.offline { background: var(--danger); }
-
-/* Fullscreen Scanner Mode */
-.scanner-box.fullscreen {
-    position: fixed !important; top: 0 !important; left: 0 !important;
-    width: 100vw !important; height: 100vh !important; z-index: 10000 !important;
-    border-radius: 0 !important; border: none !important;
-}
-.scanner-box.fullscreen video { object-fit: cover !important; }
-
-/* Transisi halus saat ganti tema */
-body, #app, .tab, .stat-card, .qr-card, .form-row, input, select, table, th, td, .chart-container {
-    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
-}
-
-body.dark-theme input, body.dark-theme select {
-    background: #0f172a;
-    color: #f8fafc;
-}
-
-body.dark-theme table th { background: #0f172a; }
-body.dark-theme tr:hover td { background: #334155; }
-body.dark-theme .empty-state { background: #0f172a; }
-body.dark-theme .qr-card { background: #f8fafc; color: #0f172a; } /* QR Card harus tetap putih agar mudah di-scan */
-
-/* Hover tabel bisa diklik untuk sorting */
-th.sortable { cursor: pointer; user-select: none; }
-th.sortable:hover { background-color: var(--primary-light); color: var(--primary); }
-body.dark-theme th.sortable:hover { background-color: rgba(255, 255, 255, 0.1); }
-
+/* =========================================================
+   FONDASI UTAMA & ANTI-GESER
+   ========================================================= */
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
+html { overflow-x: hidden; scroll-behavior: smooth; }
 body {
     font-family: 'Plus Jakarta Sans', sans-serif;
     background-color: var(--bg-main);
     color: var(--text-main);
     line-height: 1.6;
-    -webkit-font-smoothing: antialiased;
-}
-
-#app {
-    max-width: 1100px;
-    margin: 40px auto;
-    background: var(--bg-card);
-    border-radius: 16px;
-    box-shadow: var(--shadow-lg);
-    overflow: hidden;
-    border: 1px solid rgba(255, 255, 255, 0.5);
-    position: relative;
-}
-
-/* Header Bersih (Tanpa Gradien) */
-.masthead {
-    padding: 30px 30px;
-    background: var(--bg-card);
-    display: flex;
-    align-items: center;
-    gap: 24px;
-    border-bottom: 1px solid var(--border);
-}
-
-/* Penempatan Logo */
-.stamp-badge {
-    background: var(--bg-main);
-    width: 60px; height: 60px; border-radius: 14px;
-    display: flex; align-items: center; justify-content: center;
-    border: 1px solid var(--border);
-    padding: 10px;
-}
-.app-logo {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-}
-
-.masthead h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 2px;}
-.subtitle { color: var(--text-muted); font-size: 14px; font-weight: 500; }
-
-.badge-ultimate {
-    font-size: 12px; background: var(--primary); color: var(--bg-card); 
-    padding: 4px 10px; border-radius: 20px; vertical-align: middle; 
-    letter-spacing: 1px; font-weight: 700; margin-left: 5px;
-}
-
-/* Ganti Hiasan Kartu QR dari ungu menjadi garis abu elegan */
-.qr-card::before { background: var(--border); }
-
-.tabs {
-    display: flex; background: var(--bg-card);
-    border-bottom: 1px solid var(--border); overflow-x: auto; padding: 0 10px;
-}
-
-.tab {
-    flex: 1; padding: 18px 15px; border: none; background: none;
-    font-size: 15px; font-weight: 600; color: var(--text-muted); cursor: pointer;
-    display: flex; align-items: center; justify-content: center; gap: 8px;
-    transition: all 0.3s ease; border-bottom: 3px solid transparent;
-}
-.tab:hover { color: var(--primary); background: rgba(0, 0, 0, 0.04); }
-.tab.active { color: var(--primary); border-bottom: 3px solid var(--primary); }
-
-/* Main Content */
-main { padding: 35px; }
-.tab-panel { display: none; }
-.tab-panel.active { display: block; animation: slideUp 0.4s ease cubic-bezier(0.16, 1, 0.3, 1); }
-@keyframes slideUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
-
-.panel-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; flex-wrap: wrap; gap: 15px; }
-.panel-title { font-size: 24px; font-weight: 700; letter-spacing: -0.5px;}
-.panel-hint { color: var(--text-muted); font-size: 14px; margin-top: 4px; }
-.header-actions { display: flex; gap: 12px; }
-
-/* Forms & Inputs */
-.form-row {
-    display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; margin-bottom: 20px;
-    background: #f8fafc; padding: 24px; border-radius: 12px;
-    border: 1px solid var(--border); box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
-}
-
-.field { display: flex; flex-direction: column; flex: 1; min-width: 150px; }
-.field label { font-size: 13px; font-weight: 600; margin-bottom: 8px; color: #475569; cursor: pointer; }
-input, select {
-    padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px;
-    font-family: inherit; font-size: 14px; transition: all 0.2s ease; background: white; color: var(--text-main);
-    min-width: 0; width: 100%; box-sizing: border-box;
-}
-input:focus, select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 4px var(--primary-light); }
-
-/* BARU: Field dengan tombol tambah inline (mis. Kategori/Jenis Kesalahan) */
-.field-with-add { min-width: 220px; }
-.input-with-add { display: flex; gap: 8px; align-items: stretch; min-width: 0; }
-.input-with-add select { flex: 1 1 auto; min-width: 0; }
-.input-with-add .btn-add-inline {
-    flex: 0 0 auto; padding: 0 14px; display: flex; align-items: center; justify-content: center;
-}
-
-/* Search Bar */
-.search-bar { position: relative; margin-bottom: 20px; }
-.search-bar i { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 18px; }
-.search-bar input { width: 100%; padding-left: 45px; border-radius: 10px; background: white; border: 1px solid var(--border); }
-
-/* Buttons */
-.btn {
-    padding: 12px 20px; background: var(--primary); color: white; border: none; border-radius: 8px;
-    font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px;
-    transition: all 0.2s ease; box-shadow: var(--shadow-primary);
-}
-.btn:hover { background: var(--primary-hover); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15); }
-.btn:active { transform: translateY(0); }
-
-.btn.secondary { background: white; color: var(--text-main); border: 1px solid var(--border); box-shadow: var(--shadow-sm); }
-.btn.secondary:hover { background: #f1f5f9; box-shadow: var(--shadow-md); transform: none;}
-.btn.danger { background: #404040; box-shadow: 0 4px 14px 0 rgba(0, 0, 0, 0.15); }
-.btn.danger:hover { background: #000000; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2); }
-.btn.warning { background: transparent; color: var(--text-main); border: 1px solid var(--border); box-shadow: none; }
-.btn.warning:hover { background: var(--primary-light); border-color: var(--text-muted); }
-.btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
-
-/* Tables */
-table { width: 100%; border-collapse: separate; border-spacing: 0; background: white; border-radius: 10px; overflow: hidden; border: 1px solid var(--border); }
-th, td { padding: 16px; text-align: left; border-bottom: 1px solid var(--border); }
-th { background: #f8fafc; font-weight: 600; font-size: 13px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
-td { font-size: 14px; transition: background 0.2s; }
-tr:last-child td { border-bottom: none; }
-tr:hover td { background: #f8fafc; }
-.empty-state { text-align: center; padding: 50px 20px; color: var(--text-muted); background: #f8fafc; border-radius: 12px; border: 2px dashed var(--border); }
-
-/* Toggle List (Sudah/Belum Absen) */
-.att-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
-.att-toggles { display: flex; background: #e2e8f0; border-radius: 8px; overflow: hidden; padding: 4px; gap: 4px;}
-.att-btn { padding: 8px 16px; border: none; border-radius: 6px; background: transparent; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--text-muted); transition: all 0.2s; }
-.att-btn.active { background: white; color: var(--primary); box-shadow: var(--shadow-sm); }
-
-/* Badges */
-.badge { padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; display: inline-block; letter-spacing: 0.3px; }
-.badge.Hadir { background: var(--success-bg); color: #065f46; }
-.badge.Sakit { background: var(--warning-bg); color: #92400e; }
-.badge.Izin { background: var(--warning-bg); color: #92400e; }
-.badge.Alpa { background: var(--danger-bg); color: #991b1b; }
-
-/* Stats Dashboard */
-.stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 30px; }
-.stat-card { 
-    background: white; padding: 24px; border-radius: 14px; border: 1px solid var(--border); 
-    text-align: center; box-shadow: var(--shadow-sm); transition: all 0.3s ease; position: relative; overflow: hidden;
-}
-.stat-card::after { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: var(--border); transition: all 0.3s ease; }
-.stat-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); }
-.stat-card:nth-child(1):hover::after { background: var(--text-muted); }
-/* Hover garis bawah kartu */
-.stat-card.text-success:hover::after { background: var(--primary); }
-.stat-card.text-warning:hover::after { background: var(--text-muted); }
-.stat-card.text-danger:hover::after { background: #404040; }
-
-.stat-card h3 { font-size: 32px; font-weight: 700; margin-bottom: 8px; color: var(--text-main); }
-.stat-card p { font-size: 13px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
-
-/* Warna Teks Persentase menjadi Skala Hitam/Abu */
-.text-success h3 { color: var(--primary); } 
-.text-warning h3 { color: var(--text-muted); }
-.text-danger h3 { color: var(--text-main); }
-
-/* Scanner Layout */
-.scan-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 35px; }
-.scanner-box { 
-    width: 100%; aspect-ratio: 4/3; background: #0f172a; border-radius: 14px; 
-    overflow: hidden; position: relative; display: flex; align-items: center; justify-content: center; 
-    box-shadow: inset 0 0 30px rgba(0,0,0,0.8); border: 2px solid var(--border);
-}
-#scanner-video { width: 100%; height: 100%; object-fit: cover; display: none; }
-.scanner-placeholder { color: #64748b; text-align: center; font-size: 15px; font-weight: 500;}
-.scanner-controls { display: flex; gap: 12px; margin-top: 20px; }
-.manual-entry { margin-top: 30px; padding-top: 25px; border-top: 1px dashed var(--border); }
-.manual-entry h3 { font-size: 16px; margin-bottom: 16px; font-weight: 700; color: var(--text-main); }
-
-/* Cards Grid */
-.cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 24px; }
-.qr-card { 
-    border: 1px solid var(--border); border-radius: 16px; padding: 24px; text-align: center; 
-    background: white; box-shadow: var(--shadow-sm); position: relative; overflow: hidden; transition: transform 0.2s;
-}
-.qr-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
-.qr-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: var(--primary); }
-.qr-card h3 { font-size: 18px; font-weight: 700; margin-bottom: 6px; margin-top: 15px;}
-.qr-card p { font-size: 14px; color: var(--text-muted); margin-bottom: 24px; font-weight: 500; }
-.qr-code { display: inline-flex; justify-content: center; padding: 12px; background: white; border-radius: 12px; border: 1px solid var(--border); box-shadow: var(--shadow-sm);}
-
-/* Toast Notifications */
-#toast { 
-    position: fixed; top: 24px; right: 24px; background: var(--primary); color: var(--bg-card); 
-    padding: 16px 24px; border-radius: 10px; transform: translateX(150%); 
-    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1); z-index: 1000; 
-    font-weight: 500; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3); display: flex; align-items: center; gap: 12px; 
-}
-#toast.show { transform: translateX(0); }
-#toast.success { border-left: 5px solid var(--success); }
-#toast.danger { border-left: 5px solid var(--danger); }
-#toast.warning { border-left: 5px solid var(--warning); }
-
-/* Modal PIN & Loading */
-.modal {
-    display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(15, 23, 42, 0.7); z-index: 2000; align-items: center; justify-content: center;
-    backdrop-filter: blur(4px);
-}
-.modal.active { display: flex; animation: fadeIn 0.3s ease; }
-.modal-content { background: white; padding: 30px; border-radius: 16px; width: 90%; max-width: 400px; text-align: center; box-shadow: var(--shadow-lg); }
-.modal-content h3 { font-size: 20px; font-weight: 700; margin-bottom: 10px; }
-.modal-content p { color: var(--text-muted); font-size: 14px; }
-.modal-actions { display: flex; gap: 10px; margin-top: 20px; justify-content: center; }
-
-.loading-overlay {
-    display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(255, 255, 255, 0.8); z-index: 3000; align-items: center; justify-content: center; flex-direction: column;
-}
-.loading-overlay.active { display: flex; }
-.spinner {
-    border: 4px solid var(--border); border-left-color: var(--primary);
-    border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 15px;
-}
-@keyframes spin { 100% { transform: rotate(360deg); } }
-@keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
-
-/* =========================================================
-   RESPONSIVITAS TOTAL (DESKTOP, TABLET, SMARTPHONE)
-   ========================================================= */
-
-/* 1. Mencegah Tabel Merusak Layar (Anti-Stretching) */
-#siswa-table-wrap, #attendance-table-wrap, #belum-table-wrap {
-    width: 100%;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    border-radius: 8px;
-    border: 1px solid var(--border);
-}
-table { border: none; } /* Hindari border ganda karena sudah di-wrap */
-
-/* 2. PWA & NATIVE APP EXPERIENCE (HP & DESKTOP) */
-.masthead, .tabs, .btn, th, .stat-card, .att-toggles {
-    -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent;
-}
-@media (display-mode: standalone) {
-    #btn-install-pwa { display: none !important; }
-    .masthead { padding-top: calc(30px + env(safe-area-inset-top)); }
-    #app { border-radius: 0; margin: 0; border: none; min-height: 100vh; box-shadow: none; max-width: 100%; }
-}
-
-/* 3. MODE TABLET & LAPTOP KECIL (Layar 769px - 1024px) */
-@media (max-width: 1024px) {
-    #app { margin: 20px auto; width: 95%; max-width: 100%; }
-    main { padding: 25px; }
-    .masthead { padding: 25px; }
-    .scan-layout, .panel-header { grid-template-columns: 1fr; flex-direction: column; align-items: stretch; }
-    .header-actions { display: flex; flex-wrap: wrap; justify-content: flex-start; }
-    .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 15px; }
-}
-
-/* 4. MODE SMARTPHONE (Layar di bawah 768px) */
-@media (max-width: 768px) {
-    #app { margin: 0; width: 100%; border-radius: 0; border: none; min-height: 100vh; box-shadow: none; }
-    main { padding: 15px; padding-bottom: 90px !important; }
-    
-    /* Merapikan Header HP */
-    .masthead { padding: 20px 15px; flex-direction: column; text-align: center; gap: 15px; }
-    .masthead > div:first-child { flex-direction: column; gap: 10px; }
-    .masthead h1 { font-size: 22px; }
-    .masthead > div:last-child { margin-left: 0; justify-content: center; width: 100%; }
-    
-    /* Merapikan Form Input & Tombol */
-    .form-row { padding: 15px; flex-direction: column; align-items: stretch; gap: 12px; }
-    .form-row .field { width: 100%; min-width: unset; }
-    .form-row .btn { width: 100%; justify-content: center; }
-    .input-with-add .btn-add-inline { width: auto; padding: 0 16px; }
-    .header-actions .btn { flex: 1; justify-content: center; font-size: 13px; padding: 10px; }
-    
-    /* Kartu Statistik Mengecil */
-    .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
-    .stat-card { padding: 15px; }
-    .stat-card h3 { font-size: 24px; margin-bottom: 4px; }
-    .stat-card p { font-size: 11px; }
-
-    /* Menu Navigasi Bawah (Bottom Nav) */
-    .tabs {
-        position: fixed; bottom: 0; left: 0; width: 100%; z-index: 9000;
-        box-shadow: 0 -4px 20px rgba(0,0,0,0.08); padding-bottom: env(safe-area-inset-bottom);
-        border-top: 1px solid var(--border); border-bottom: none; justify-content: space-around;
-    }
-    .tab { flex-direction: column; font-size: 11px; padding: 10px 5px; gap: 4px; border-bottom: none !important; }
-    .tab i { font-size: 22px; }
-    
-    /* Scanner Area */
-    .scanner-box { aspect-ratio: 3/4; border-radius: 10px; }
-}
-
-/* =========================================
-   PERBAIKAN CETAK (PRINT) A4 SUPER RAPI
-   ========================================= */
-@media print {
-    @page { size: A4; margin: 0.5cm; }
-    .masthead, .tabs, .panel-header, #tab-siswa, #tab-absensi, 
-    .header-actions, #toast, #loading-overlay, #pin-modal, #network-status { display: none !important; }
-    body, #app, main { background: transparent !important; padding: 0 !important; margin: 0 !important; box-shadow: none !important; border: none !important; max-width: 100% !important; width: 100% !important; overflow: visible !important; }
-    #tab-kartu { display: block !important; opacity: 1 !important; visibility: visible !important; }
-    .cards-grid { position: relative !important; display: grid !important; grid-template-columns: repeat(4, 1fr) !important; gap: 15px !important; width: 100% !important; }
-    .qr-card { break-inside: avoid !important; page-break-inside: avoid !important; border: 1px dashed #64748b !important; padding: 15px !important; text-align: center !important; background: #fff !important; box-shadow: none !important; transform: none !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-    .qr-card::before { display: none !important; }
-    .qr-card h3 { font-size: 15px !important; margin-top: 10px !important; margin-bottom: 2px !important; color: #000 !important; }
-    .qr-card p { font-size: 12px !important; color: #333 !important; margin-bottom: 0 !important; }
-    .qr-code { border: none !important; padding: 0 !important; display: flex !important; justify-content: center !important; align-items: center !important; box-shadow: none !important; }
-}
-
-/* =========================================================
-   PENGALAMAN UI/UX PREMIUM (ENTERPRISE POLISH)
-   ========================================================= */
-
-/* 1. TYPOGRAPHY & SMOOTHING TINGKAT TINGGI */
-body {
+    width: 100%; /* Hindari 100vw agar tidak terpotong */
+    overflow-x: hidden;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
 }
 
-/* 2. EFEK KACA EMBUN (GLASSMORPHISM) & STICKY HEADER */
-.masthead {
-    position: sticky;
-    top: 0;
-    z-index: 8000;
-    background: rgba(252, 252, 252, 0.75) !important;
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
-    transition: background 0.3s ease, border-color 0.3s ease;
-}
-
-/* Glassmorphism khusus untuk Mode Gelap */
-body.dark-theme .masthead {
-    background: rgba(10, 10, 10, 0.75) !important;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
-}
-
-/* 3. MAC-STYLE CUSTOM SCROLLBAR (Elegan & Tipis) */
-::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-}
-::-webkit-scrollbar-track {
-    background: transparent;
-}
-::-webkit-scrollbar-thumb {
-    background: var(--border);
-    border-radius: 10px;
-}
-::-webkit-scrollbar-thumb:hover {
-    background: var(--text-muted);
-}
-/* Menghapus sudut putih pada pertemuan scrollbar vertikal & horizontal */
-::-webkit-scrollbar-corner {
-    background: transparent;
-}
-
-/* 4. ANIMASI SINEMATIK SAAT PINDAH TAB (FADE & SCALE) */
-@keyframes cinematicSlideUp {
-    0% { opacity: 0; transform: translateY(15px) scale(0.99); }
-    100% { opacity: 1; transform: translateY(0) scale(1); }
-}
-.tab-panel.active {
-    display: block;
-    animation: cinematicSlideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-/* 5. MICRO-INTERACTIONS (Interaksi Hover yang Empuk) */
-.btn {
-    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.btn:active {
-    transform: scale(0.96) !important; /* Efek ditekan ke dalam */
-}
-
-.stat-card, .qr-card {
-    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s ease;
-}
-.stat-card:hover, .qr-card:hover {
-    transform: translateY(-5px) scale(1.01);
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.02);
-}
-body.dark-theme .stat-card:hover, body.dark-theme .qr-card:hover {
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4);
-}
-
-/* 6. PERBAIKAN GLASSMORPHISM UNTUK BOTTOM NAV (HP) */
-@media (max-width: 768px) {
-    .tabs {
-        background: rgba(255, 255, 255, 0.85) !important;
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border-top: 1px solid rgba(0, 0, 0, 0.05) !important;
-    }
-    body.dark-theme .tabs {
-        background: rgba(23, 23, 23, 0.85) !important;
-        border-top: 1px solid rgba(255, 255, 255, 0.05) !important;
-    }
-}
-
-/* =========================================================
-   PENGUNCI LAYAR HP (ANTI-GESER KANAN / OVERFLOW FIX)
-   ========================================================= */
-
-/* 1. Kunci fondasi utama agar tidak bisa digeser ke samping */
-body {
-    width: 100%;
-    overflow-x: hidden;
-    margin: 0;
-    padding: 0;
-}
-/* Memisahkan tag HTML agar scroll atas-bawah (Vertikal) tidak mati */
-html {
-    overflow-x: hidden;
-    scroll-behavior: smooth;
-}
-
-/* 2. Pastikan kontainer aplikasi tidak menembus layar */
 #app {
-    max-width: 100vw !important;
-    overflow-x: hidden !important;
-}
-
-/* 3. Mencegah grafik (Chart.js) memaksa layar melebar */
-.chart-container {
-    max-width: 100%;
-    overflow: hidden;
-    box-sizing: border-box;
-}
-
-/* 4. Pastikan form dan input tidak melebihi lebar layar */
-.form-row, input, select {
-    max-width: 100%;
-    box-sizing: border-box;
-}
-
-/* 5. Perbaikan untuk elemen di dalam tab-panel di HP */
-.tab-panel {
-    max-width: 100vw;
+    max-width: 1100px;
+    width: 100%;
+    margin: 40px auto;
+    background: var(--bg-card);
+    border-radius: 16px;
+    box-shadow: var(--shadow-lg);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    position: relative;
     overflow-x: hidden;
 }
 
-/* =========================================
-   FITUR ENTERPRISE LENGKAP
-   ========================================= */
-
-/* 1. Transisi Layar Login */
-.login-screen {
-    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-    background: var(--bg-main); z-index: 10000;
-    display: flex; align-items: center; justify-content: center;
-    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-    transition: opacity 0.5s ease;
-}
-
-/* 2. Warna Elegan untuk Status "Terlambat" */
-.badge.Terlambat { background: #f3e8ff; color: #7e22ce; }
-body.dark-theme .badge.Terlambat { background: transparent; color: #c084fc; border: 1px solid #7e22ce; }
-
-/* 3. Checkbox Premium (Bulk Actions) */
-input[type="checkbox"] {
-    width: 18px; height: 18px; cursor: pointer;
-    accent-color: var(--primary);
-}
+main { padding: 35px; width: 100%; box-sizing: border-box; }
 
 /* =========================================================
-   PERBAIKAN POP-UP SWEETALERT (TEMA MONOKROM & Z-INDEX)
+   DARK THEME (ZINC APPLE STYLE)
    ========================================================= */
-
-/* 1. Paksa Pop-up selalu tampil paling depan (Bahkan menembus Layar Login) */
-.swal2-container {
-    z-index: 99999 !important;
-}
-
-/* 2. Sesuaikan Background, Teks, & Border Pop-up dengan Tema (Gelap/Terang) */
-.swal2-popup, .swal2-toast {
-    background-color: var(--bg-card) !important;
-    color: var(--text-main) !important;
-    border: 1px solid var(--border) !important;
-    box-shadow: var(--shadow-lg) !important;
-}
-
-/* 3. Warnai Teks Judul & Deskripsi sesuai tema */
-.swal2-title, .swal2-html-container {
-    color: var(--text-main) !important;
-}
-
-/* 4. Desain Kolom Input PIN di dalam Pop-up agar elegan */
-.swal2-input {
-    background-color: var(--bg-main) !important;
-    color: var(--text-main) !important;
-    border: 1px solid var(--border) !important;
-}
-.swal2-input:focus {
-    border-color: var(--text-muted) !important;
-    box-shadow: 0 0 0 2px var(--border) !important;
-}
-
-/* 5. Khusus untuk Ikon Sukses/Gagal agar lebih membaur */
-.swal2-icon.swal2-success [class^="swal2-success-line"] { background-color: var(--text-main) !important; }
-.swal2-icon.swal2-success .swal2-success-ring { border-color: var(--border) !important; }
-
-/* =========================================================
-   ID CARD STUDIO (STANDAR KARTU PVC / KTP)
-   ========================================================= */
-.id-card-pvc {
-    width: 210px; height: 330px; /* Rasio mendekati 54x86mm (CR80) */
-    background: white; border: 1px solid var(--border); border-radius: 12px;
-    display: flex; flex-direction: column; overflow: hidden; position: relative;
-    box-shadow: var(--shadow-sm); transition: transform 0.3s; margin: 0 auto;
-}
-.id-card-pvc:hover { transform: translateY(-5px); box-shadow: var(--shadow-md); }
-.id-header {
-    background: var(--primary); color: var(--bg-card);
-    padding: 15px 10px; text-align: center;
-}
-.id-header h4 { font-size: 14px; font-weight: 700; margin-bottom: 2px; text-transform: uppercase; }
-.id-header p { font-size: 10px; opacity: 0.8; margin: 0; }
-.id-body {
-    padding: 20px; flex: 1; display: flex; flex-direction: column;
-    align-items: center; justify-content: center; background: white;
-}
-.id-name { font-size: 16px; font-weight: 700; text-align: center; margin-top: 15px; color: var(--text-main); line-height: 1.2; }
-.id-nis { font-size: 12px; color: var(--text-muted); text-align: center; margin-top: 5px; font-weight: 600; }
-.id-footer { background: #f8fafc; padding: 10px; text-align: center; font-size: 10px; color: var(--text-muted); border-top: 1px solid var(--border); font-weight: 600;}
-
-/* Perbaikan Saat Cetak ID Card */
-@media print {
-    /* MENGHILANGKAN KOTAK INPUT DARI KERTAS CETAK */
-    .form-row { display: none !important; }
-    
-    /* UBAH DARI 4 KOLOM MENJADI 3 KOLOM AGAR MUAT DI KERTAS A4 */
-    .cards-grid { grid-template-columns: repeat(3, 1fr) !important; gap: 5px !important; }
-    
-    .id-card-pvc { border: 1px dashed #94a3b8 !important; box-shadow: none !important; break-inside: avoid; margin: 0 auto; }
-    .id-header { background: #000 !important; color: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    .id-body { background: #fff !important; }
-    .insight-card { display: none !important; } 
-}
-
-    /* UBAH DARI 4 KOLOM MENJADI 3 KOLOM AGAR MUAT DI KERTAS A4 */
-    .cards-grid { grid-template-columns: repeat(3, 1fr) !important; gap: 15px !important; }
-    
-    .id-card-pvc { border: 1px dashed #94a3b8 !important; box-shadow: none !important; break-inside: avoid; margin: 0 auto; }
-    .id-header { background: #000 !important; color: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    .id-body { background: #fff !important; }
-    .insight-card { display: none !important; } 
-
-
-/* =========================================================
-   PAPAN ANALITIK (EARLY WARNING SYSTEM)
-   ========================================================= */
-.insight-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; box-shadow: var(--shadow-sm); }
-.insight-title { font-size: 16px; font-weight: 700; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; color: var(--text-main); }
-.insight-list { list-style: none; padding: 0; margin: 0; }
-.insight-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px dashed var(--border); font-size: 14px; align-items: center; }
-.insight-item:last-child { border-bottom: none; }
-.insight-item strong { color: var(--text-main); }
-
-/* =========================================================
-   PERBAIKAN GRID 5 KOTAK (STATISTIK TERLAMBAT)
-   ========================================================= */
-.stats-grid { 
-    grid-template-columns: repeat(5, 1fr) !important; 
-}
-.stat-card.text-purple:hover::after { background: #9333ea !important; }
-.text-purple h3 { color: #9333ea !important; }
-body.dark-theme .text-purple h3 { color: #c084fc !important; }
-
-/* Menyesuaikan di layar HP agar rapi (Total Siswa lebar penuh) */
-@media (max-width: 768px) {
-    .stats-grid { grid-template-columns: repeat(2, 1fr) !important; }
-    .stat-card:nth-child(1) { grid-column: 1 / -1; } 
-}
-
-/* =========================================================
-   PERBAIKAN GRID 5 KOTAK (TEMA MONOKROM ELEGAN)
-   ========================================================= */
-.stats-grid { 
-    grid-template-columns: repeat(5, 1fr) !important; 
-}
-
-/* Warna Terlambat disesuaikan menjadi Monokrom (Abu-abu Gelap) */
-.stat-card.text-terlambat:hover::after { background: var(--text-muted) !important; }
-.text-terlambat h3 { color: var(--text-muted) !important; }
-
-/* Menyesuaikan di layar HP agar tetap rapi */
-@media (max-width: 768px) {
-    .stats-grid { grid-template-columns: repeat(2, 1fr) !important; }
-    .stat-card:nth-child(1) { grid-column: 1 / -1; } 
-}
-
-/* =========================================================
-   UI/UX: EFEK FLASH KAMERA & ANIMASI TABEL
-   ========================================================= */
-#scanner-flash {
-    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-    pointer-events: none; opacity: 0; z-index: 20;
-    transition: opacity 0.2s ease-out, background-color 0.2s ease-out;
-}
-#scanner-flash.success { background-color: rgba(16, 185, 129, 0.4); opacity: 1; } /* Kilat Hijau */
-#scanner-flash.error { background-color: rgba(239, 68, 68, 0.5); opacity: 1; }    /* Kilat Merah */
-#scanner-flash.warning { background-color: rgba(245, 158, 11, 0.4); opacity: 1; } /* Kilat Kuning */
-
-/* UI/UX: Animasi Baris Tabel (Staggered Fade-in) */
-tbody tr { animation: fadeRow 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; }
-@keyframes fadeRow { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-tbody tr:nth-child(1) { animation-delay: 0.05s; }
-tbody tr:nth-child(2) { animation-delay: 0.10s; }
-tbody tr:nth-child(3) { animation-delay: 0.15s; }
-tbody tr:nth-child(4) { animation-delay: 0.20s; }
-tbody tr:nth-child(5) { animation-delay: 0.25s; }
-
-/* =========================================================
-   REVISI TOTAL DARK MODE (ULTIMATE ENTERPRISE)
-   ========================================================= */
-
-/* 1. Palet Warna Zinc (Sangat Lembut di Mata, Standar Apple/Vercel) */
 body.dark-theme {
-    --bg-main: #09090b !important;       /* Hitam Zinc (Bukan hitam pekat, sangat mewah) */
-    --bg-card: #18181b !important;       /* Sedikit lebih terang untuk menciptakan Elevasi (Kedalaman) */
-    --text-main: #ededed !important;     /* Putih redup, mencegah silau (Astigmatism) pada mata */
-    --text-muted: #a1a1aa !important;    /* Abu-abu silver untuk teks sekunder */
-    --border: #27272a !important;        /* Garis batas yang menyatu mulus dengan background */
-    
-    --primary: #ededed !important;       /* Tombol utama putih redup */
+    --bg-main: #09090b !important;       
+    --bg-card: #18181b !important;       
+    --text-main: #ededed !important;     
+    --text-muted: #a1a1aa !important;    
+    --border: #27272a !important;        
+    --primary: #ededed !important;       
     --primary-hover: #ffffff !important; 
     --primary-light: #27272a !important; 
     
-    /* MENGHILANGKAN "Noda Bayangan" - Shadow di mode gelap harus lebih pekat */
     --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.8) !important;
     --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.8) !important;
     --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.8) !important;
 }
 
-/* 2. Menghaluskan Input, Form & Tombol */
-body.dark-theme input, 
-body.dark-theme select,
-body.dark-theme .search-bar input {
-    background: #09090b !important;      
-    color: var(--text-main) !important;
-    border: 1px solid var(--border) !important;
-    box-shadow: inset 0 1px 2px rgba(0,0,0,0.5) !important; /* Efek cekung ke dalam */
-}
-body.dark-theme input:focus, 
-body.dark-theme select:focus {
-    border-color: #52525b !important; /* Border menyala lembut (silver) saat diketik */
-    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.05) !important;
-}
-body.dark-theme .btn { color: #09090b !important; font-weight: 700 !important; }
+body.dark-theme .btn { color: #09090b !important; font-weight: 700; }
+body.dark-theme .btn.secondary { background: transparent; color: var(--text-main); }
+body.dark-theme .btn.danger { background: #404040; color: #ffffff; }
+body.dark-theme .btn.warning { background: transparent; color: var(--text-main); border: 1px solid var(--text-muted); }
+body.dark-theme .btn.warning:hover { background: rgba(255,255,255,0.1); }
+body.dark-theme .app-logo { filter: invert(1); }
 
-/* 3. Menghaluskan Tabel agar Rapi dan Tidak Mencolok */
-body.dark-theme table th { 
-    background: #09090b !important; 
-    color: var(--text-muted) !important; 
-    border-bottom: 2px solid var(--border) !important;
+/* Input & Table Dark Theme */
+body, #app, .tab, .stat-card, .qr-card, .form-row, input, select, table, th, td, .chart-container {
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
-body.dark-theme tr:hover td { 
-    background: #18181b !important; 
+body.dark-theme input, body.dark-theme select, body.dark-theme .search-bar input {
+    background: #09090b !important; color: var(--text-main) !important; border: 1px solid var(--border) !important;
 }
-body.dark-theme th.sortable:hover { 
-    background-color: #18181b !important; 
-    color: #ffffff !important; 
-}
-body.dark-theme .empty-state { 
-    background: #09090b !important; 
-    border: 1px dashed var(--border) !important; 
-}
-
-/* 4. Glassmorphism yang Benar-Benar Menyatu dengan Mode Gelap */
-body.dark-theme .masthead {
-    background: rgba(9, 9, 11, 0.8) !important;
-    border-bottom: 1px solid var(--border) !important;
-}
-@media (max-width: 768px) {
-    body.dark-theme .tabs {
-        background: rgba(24, 24, 27, 0.9) !important;
-        border-top: 1px solid var(--border) !important;
-    }
-}
-
-/* 5. ID Card Studio Tahan Banting (Tetap Terang Untuk Keperluan Print) */
-body.dark-theme .qr-card,
-body.dark-theme .id-card-pvc { background: #ffffff !important; color: #171717 !important; border-color: #e5e5e5 !important; }
-body.dark-theme .id-header { background: #171717 !important; color: #ffffff !important; }
-body.dark-theme .id-body { background: #ffffff !important; }
-body.dark-theme .id-name { color: #171717 !important; }
-body.dark-theme .id-nis { color: #737373 !important; }
-body.dark-theme .id-footer { background: #f8fafc !important; color: #737373 !important; border-top: 1px solid #e5e5e5 !important;}
+body.dark-theme input:focus, body.dark-theme select:focus { border-color: #52525b !important; }
+body.dark-theme table th { background: #09090b !important; color: var(--text-muted) !important; border-bottom: 2px solid var(--border) !important; }
+body.dark-theme tr:hover td { background: #18181b !important; }
+body.dark-theme th.sortable:hover { background-color: #18181b !important; color: #ffffff !important; }
+body.dark-theme .empty-state { background: #09090b !important; border: 1px dashed var(--border) !important; }
 
 /* =========================================================
-   PERBAIKAN RESPONSIVITAS MOBILE PWA (ANTI-TERPOTONG)
+   HEADER, TABS & ANIMATIONS
    ========================================================= */
-@media (max-width: 768px) {
-    /* 1. Kunci Ketat Pondasi Utama agar seukuran Layar HP */
-    body, html { max-width: 100vw; overflow-x: hidden !important; }
-    #app { max-width: 100vw; border-radius: 0; margin: 0; border: none; }
-    main { padding: 15px; padding-bottom: 90px !important; max-width: 100vw; box-sizing: border-box; overflow-x: hidden; }
-    
-    /* 2. Pastikan Tab dan Panel tidak menabrak batas layar */
-    .tab-panel { max-width: 100%; overflow-x: hidden; box-sizing: border-box; }
-    .panel-header { width: 100%; }
-    
-    /* 3. KUNCI UTAMA: Paksa tabel agar bisa digeser (scroll) secara mandiri */
-    #siswa-table-wrap, #attendance-table-wrap, #belum-table-wrap {
-        width: 100%;
-        max-width: calc(100vw - 30px); /* Layar HP dikurangi padding kiri-kanan */
-        display: block !important; 
-        overflow-x: auto !important;
-        -webkit-overflow-scrolling: touch;
-        white-space: nowrap; /* Mencegah teks berantakan, biarkan memanjang ke samping */
-        border: 1px solid var(--border);
-        border-radius: 8px;
-    }
-    
-    /* 4. Rapikan Susunan Input Tanggal & Jam di Tab Absensi */
-    .field[style*="flex-direction: row"] {
-        flex-direction: column !important; /* Susun ke bawah */
-        align-items: stretch !important;
-        gap: 8px !important;
-    }
-    .field[style*="flex-direction: row"] label { margin-left: 0 !important; }
-    
-    /* 5. Rapikan Tombol PDF & Excel agar memenuhi lebar layar HP */
-    .header-actions { flex-direction: column; width: 100%; }
-    .header-actions .btn { width: 100%; justify-content: center; margin-bottom: 5px; }
-    
-    /* 6. Rapikan Panel Aksi Massal (Bulk Action) */
-    #bulk-panel { flex-direction: column !important; align-items: stretch !important; }
-    #bulk-panel .btn { width: 100%; margin-top: 5px; }
-    
-    /* 7. Rapikan Layout Kamera Scanner */
-    .scan-layout { display: flex; flex-direction: column; width: 100%; max-width: 100%; }
-    .scanner-container { width: 100%; max-width: 100%; }
-    .scanner-box { width: 100%; max-width: 100%; aspect-ratio: 4/3; }
-    
-    /* 8. Sesuaikan Lebar Pencarian Data Siswa */
-    .search-bar, #filter-kelas { width: 100%; min-width: unset !important; }
+.masthead {
+    padding: 30px; background: rgba(252, 252, 252, 0.75); display: flex; align-items: center; gap: 24px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05); position: sticky; top: 0; z-index: 8000;
+    backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
 }
-/* ==========================================
-   CATATAN ANEKDOT
-   ========================================== */
-.anekdot-card {
-    background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
-    padding: 18px 20px; margin-bottom: 14px; box-shadow: var(--shadow-sm); position: relative;
+body.dark-theme .masthead { background: rgba(10, 10, 10, 0.75) !important; border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important; }
+
+.stamp-badge {
+    background: var(--bg-main); width: 60px; height: 60px; border-radius: 14px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border); padding: 10px;
 }
-.anekdot-card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
-.anekdot-siswa-info { display: flex; flex-direction: column; }
-.anekdot-siswa-info strong { font-size: 15px; color: var(--text-main); }
-.anekdot-siswa-info span { font-size: 12px; color: var(--text-muted); }
-.anekdot-meta { font-size: 12px; color: var(--text-muted); text-align: right; }
-.anekdot-isi { font-size: 14px; color: var(--text-main); line-height: 1.5; margin-bottom: 10px; white-space: pre-wrap; }
-.anekdot-footer { display: flex; justify-content: space-between; align-items: center; }
+.app-logo { width: 100%; height: 100%; object-fit: contain; }
+.masthead h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 2px;}
+.subtitle { color: var(--text-muted); font-size: 14px; font-weight: 500; }
+.badge-ultimate { font-size: 12px; background: var(--primary); color: var(--bg-card); padding: 4px 10px; border-radius: 20px; vertical-align: middle; letter-spacing: 1px; font-weight: 700; margin-left: 5px; }
 
-.badge-kategori { padding: 5px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: 0.3px; background: var(--bg-main); color: var(--text-muted); }
-.badge-kategori.Sosial-Emosional { background: #e0e7ff; color: #3730a3; }
-.badge-kategori.Akademik { background: var(--success-bg); color: #065f46; }
-.badge-kategori.Kedisiplinan { background: var(--danger-bg); color: #991b1b; }
-.badge-kategori.Prestasi { background: #fef3c7; color: #92400e; }
-.badge-kategori.Kesehatan { background: #fce7f3; color: #9d174d; }
+.tabs { display: flex; background: var(--bg-card); border-bottom: 1px solid var(--border); overflow-x: auto; padding: 0 10px; }
+.tab { flex: 1; padding: 18px 15px; border: none; background: none; font-size: 15px; font-weight: 600; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.3s ease; border-bottom: 3px solid transparent; }
+.tab:hover { color: var(--primary); background: rgba(0, 0, 0, 0.04); }
+.tab.active { color: var(--primary); border-bottom: 3px solid var(--primary); }
 
-.badge-rahasia { padding: 3px 10px; border-radius: 20px; font-size: 10px; font-weight: 600; background: #f1f5f9; color: var(--text-muted); border: 1px solid var(--border); }
+.tab-panel { display: none; max-width: 100%; overflow-x: hidden; box-sizing: border-box; }
+.tab-panel.active { display: block; animation: cinematicSlideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+@keyframes cinematicSlideUp { 0% { opacity: 0; transform: translateY(15px) scale(0.99); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
 
 /* =========================================================
-   SKELETON LOADER (MODERN LOADING UX)
+   FORMS, BUTTONS & TABLES
    ========================================================= */
-.skeleton {
-    background: #e2e8f0;
-    border-radius: 6px;
-    position: relative;
-    overflow: hidden;
-}
+.panel-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; flex-wrap: wrap; gap: 15px; width: 100%; }
+.panel-title { font-size: 24px; font-weight: 700; letter-spacing: -0.5px;}
+.panel-hint { color: var(--text-muted); font-size: 14px; margin-top: 4px; }
+.header-actions { display: flex; gap: 12px; }
 
-/* Efek cahaya menyapu (Shimmer) */
-.skeleton::after {
-    content: '';
-    position: absolute;
-    top: 0; right: 0; bottom: 0; left: 0;
-    transform: translateX(-100%);
-    background-image: linear-gradient(
-        90deg,
-        rgba(255, 255, 255, 0) 0,
-        rgba(255, 255, 255, 0.4) 20%,
-        rgba(255, 255, 255, 0.4) 60%,
-        rgba(255, 255, 255, 0)
-    );
-    animation: shimmer 1.5s infinite;
-}
+.form-row { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; margin-bottom: 20px; background: #f8fafc; padding: 24px; border-radius: 12px; border: 1px solid var(--border); width: 100%; box-sizing: border-box; }
+.field { display: flex; flex-direction: column; flex: 1; min-width: 150px; }
+.field label { font-size: 13px; font-weight: 600; margin-bottom: 8px; color: var(--text-muted); cursor: pointer; }
+input, select { padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; font-family: inherit; font-size: 14px; width: 100%; box-sizing: border-box; background: white; color: var(--text-main); }
+input:focus, select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 4px var(--primary-light); }
 
-@keyframes shimmer {
-    100% { transform: translateX(100%); }
-}
+.field-with-add { min-width: 220px; }
+.input-with-add { display: flex; gap: 8px; align-items: stretch; width: 100%; }
+.input-with-add select { flex: 1; }
+.input-with-add .btn-add-inline { flex: 0 0 auto; padding: 0 14px; display: flex; align-items: center; justify-content: center; }
 
-/* Skeleton Khusus Mode Gelap (Menyatu dengan warna Zinc) */
-body.dark-theme .skeleton { background: #27272a; }
-body.dark-theme .skeleton::after {
-    background-image: linear-gradient(
-        90deg,
-        rgba(255, 255, 255, 0) 0,
-        rgba(255, 255, 255, 0.05) 20%,
-        rgba(255, 255, 255, 0.05) 60%,
-        rgba(255, 255, 255, 0)
-    );
-}
+.search-bar { position: relative; margin-bottom: 20px; width: 100%; }
+.search-bar i { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 18px; }
+.search-bar input { width: 100%; padding-left: 45px; border-radius: 10px; }
 
-/* Variasi Ukuran Skeleton */
-.skeleton-text { height: 16px; width: 100%; }
-.skeleton-text.short { width: 40%; }
-.skeleton-text.title { height: 28px; width: 60%; margin: 0 auto; }
+.btn { padding: 12px 20px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); box-shadow: var(--shadow-primary); }
+.btn:hover { background: var(--primary-hover); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15); }
+.btn:active { transform: scale(0.96) !important; }
+.btn.secondary { background: white; color: var(--text-main); border: 1px solid var(--border); box-shadow: var(--shadow-sm); }
+.btn.secondary:hover { background: #f1f5f9; }
+.btn.danger { background: #404040; box-shadow: 0 4px 14px 0 rgba(0, 0, 0, 0.15); }
+.btn.danger:hover { background: #000000; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2); }
+.btn.warning { background: transparent; color: var(--text-main); border: 1px solid var(--border); box-shadow: none; }
+.btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
+
+/* Table Anti-Terpotong (Wrappers) */
+#siswa-table-wrap, #attendance-table-wrap, #belum-table-wrap { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 8px; border: 1px solid var(--border); }
+table { width: 100%; border-collapse: separate; border-spacing: 0; background: white; }
+th, td { padding: 16px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
+th { background: #f8fafc; font-weight: 600; font-size: 13px; color: var(--text-muted); text-transform: uppercase; }
+tr:last-child td { border-bottom: none; }
+th.sortable { cursor: pointer; user-select: none; }
+th.sortable:hover { background-color: var(--primary-light); color: var(--primary); }
+tbody tr { animation: fadeRow 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; }
+@keyframes fadeRow { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.empty-state { text-align: center; padding: 50px 20px; color: var(--text-muted); background: #f8fafc; border-radius: 12px; border: 2px dashed var(--border); }
 
 /* =========================================================
-   UX UPGRADE: NATIVE APP FEEL (STANDAR IOS/ANDROID)
+   COMPONENTS (Badges, Cards, Scanner, SweetAlert)
    ========================================================= */
+.att-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+.att-toggles { display: flex; background: #e2e8f0; border-radius: 8px; overflow: hidden; padding: 4px; gap: 4px;}
+.att-btn { padding: 8px 16px; border: none; border-radius: 6px; background: transparent; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--text-muted); transition: all 0.2s; }
+.att-btn.active { background: white; color: var(--primary); box-shadow: var(--shadow-sm); }
 
-/* 1. ANTI-HIGHLIGHT: Mencegah teks tersorot biru saat diklik cepat */
+.badge { padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; display: inline-block; }
+.badge.Hadir { background: var(--success-bg); color: #065f46; }
+.badge.Sakit, .badge.Izin { background: var(--warning-bg); color: #92400e; }
+.badge.Alpa { background: var(--danger-bg); color: #991b1b; }
+.badge.Terlambat { background: #f3e8ff; color: #7e22ce; }
+body.dark-theme .badge.Terlambat { background: transparent; color: #c084fc; border: 1px solid #7e22ce; }
+
+.stats-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 20px; margin-bottom: 30px; }
+.stat-card { background: white; padding: 24px; border-radius: 14px; border: 1px solid var(--border); text-align: center; box-shadow: var(--shadow-sm); transition: transform 0.4s, box-shadow 0.4s; position: relative; overflow: hidden; }
+.stat-card::after { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: var(--border); transition: all 0.3s ease; }
+.stat-card:hover { transform: translateY(-5px) scale(1.01); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05); }
+body.dark-theme .stat-card:hover { box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4); }
+.stat-card h3 { font-size: 32px; font-weight: 700; margin-bottom: 8px; color: var(--text-main); }
+.stat-card p { font-size: 13px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; }
+.text-success h3 { color: var(--primary); } 
+.text-warning h3, .text-terlambat h3 { color: var(--text-muted); }
+.text-danger h3 { color: var(--text-main); }
+.stat-card.text-success:hover::after { background: var(--primary); }
+.stat-card.text-danger:hover::after { background: #404040; }
+.stat-card.text-terlambat:hover::after { background: var(--text-muted); }
+
+.scan-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 35px; }
+.scanner-box { width: 100%; aspect-ratio: 4/3; background: #0f172a; border-radius: 14px; overflow: hidden; position: relative; display: flex; align-items: center; justify-content: center; border: 2px solid var(--border); }
+#scanner-video { width: 100%; height: 100%; object-fit: cover; display: none; }
+#scanner-flash { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; opacity: 0; z-index: 20; transition: opacity 0.2s ease-out, background-color 0.2s ease-out; }
+#scanner-flash.success { background-color: rgba(16, 185, 129, 0.4); opacity: 1; }
+#scanner-flash.error { background-color: rgba(239, 68, 68, 0.5); opacity: 1; }
+
+.cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 24px; width: 100%; }
+.qr-card { border: 1px solid var(--border); border-radius: 16px; padding: 24px; text-align: center; background: white; box-shadow: var(--shadow-sm); position: relative; overflow: hidden; transition: transform 0.4s, box-shadow 0.4s; }
+.qr-card:hover { transform: translateY(-5px) scale(1.01); box-shadow: var(--shadow-md); }
+.qr-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: var(--border); }
+.qr-card h3 { font-size: 18px; font-weight: 700; margin-bottom: 6px; margin-top: 15px;}
+.qr-card p { font-size: 14px; color: var(--text-muted); margin-bottom: 24px; font-weight: 500; }
+.qr-code { display: inline-flex; justify-content: center; padding: 12px; background: white; border-radius: 12px; border: 1px solid var(--border); }
+
+/* SweetAlert & Modals */
+.swal2-container { z-index: 99999 !important; }
+.swal2-popup, .swal2-toast { background-color: var(--bg-card) !important; color: var(--text-main) !important; border: 1px solid var(--border) !important; box-shadow: var(--shadow-lg) !important; }
+.swal2-title, .swal2-html-container { color: var(--text-main) !important; }
+.swal2-input { background-color: var(--bg-main) !important; color: var(--text-main) !important; border: 1px solid var(--border) !important; }
+.swal2-input:focus { border-color: var(--text-muted) !important; box-shadow: 0 0 0 2px var(--border) !important; }
+
+/* ID Card / PVC */
+.id-card-pvc { width: 210px; height: 330px; background: white; border: 1px solid var(--border); border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; position: relative; box-shadow: var(--shadow-sm); transition: transform 0.3s; margin: 0 auto; }
+.id-card-pvc:hover { transform: translateY(-5px); box-shadow: var(--shadow-md); }
+.id-header { background: var(--primary); color: var(--bg-card); padding: 15px 10px; text-align: center; }
+.id-header h4 { font-size: 14px; font-weight: 700; margin-bottom: 2px; text-transform: uppercase; }
+.id-body { padding: 20px; flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; background: white; }
+.id-name { font-size: 16px; font-weight: 700; text-align: center; margin-top: 15px; color: var(--text-main); line-height: 1.2; }
+.id-nis { font-size: 12px; color: var(--text-muted); text-align: center; margin-top: 5px; font-weight: 600; }
+.id-footer { background: #f8fafc; padding: 10px; text-align: center; font-size: 10px; color: var(--text-muted); border-top: 1px solid var(--border); }
+
+/* Anekdot & Insight Cards */
+.anekdot-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; margin-bottom: 14px; box-shadow: var(--shadow-sm); }
+.insight-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; box-shadow: var(--shadow-sm); }
+
+/* =========================================================
+   PENGALAMAN UI/UX NATIVE APP (ANTI-HIGHLIGHT & SCROLLBAR)
+   ========================================================= */
 .btn, .tab, .stat-card, .qr-card, .att-toggles, .masthead, .insight-card {
-    -webkit-touch-callout: none;
-    -webkit-user-select: none;
-    user-select: none;
-    -webkit-tap-highlight-color: transparent; /* Hilangkan kedip abu-abu di Android */
+    -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent;
 }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+::-webkit-scrollbar-corner { background: transparent; }
 
+/* Login Screen & Network Status */
+.login-screen { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: var(--bg-main); z-index: 10000; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); transition: opacity 0.5s ease; }
+.network-status { position: fixed; top: -50px; left: 50%; transform: translateX(-50%); padding: 6px 16px; border-radius: 20px; font-size: 12px; font-weight: 700; color: white; z-index: 9999; display: flex; align-items: center; gap: 6px; transition: top 0.4s ease; box-shadow: var(--shadow-md); }
+.network-status.show { top: 15px; }
+.network-status.online { background: var(--success); }
+.network-status.offline { background: var(--danger); }
 
-/* 3. FLOATING BOTTOM NAVIGATION: Menu bawah mengambang ala aplikasi modern */
+/* =========================================================
+   RESPONSIVITAS MOBILE PWA (LAYAR HP - MAX 768px)
+   ========================================================= */
 @media (max-width: 768px) {
-    .tabs {
-        position: fixed !important;
-        bottom: 20px !important; /* Mengambang dari dasar layar */
-        left: 50% !important;
-        transform: translateX(-50%) !important;
-        width: 92% !important;
-        border-radius: 24px !important;
-        background: rgba(255, 255, 255, 0.85) !important;
-        backdrop-filter: blur(24px) !important;
-        -webkit-backdrop-filter: blur(24px) !important;
-        box-shadow: 0 10px 40px rgba(0,0,0,0.15) !important;
-        border: 1px solid rgba(255, 255, 255, 0.6) !important;
-        padding: 8px 5px !important;
-        padding-bottom: env(safe-area-inset-bottom, 8px) !important; /* Mendukung poni/garis bawah iPhone */
-    }
+    /* 1. Reset Dasar Layar HP */
+    body, html { width: 100%; overflow-x: hidden !important; }
+    #app { max-width: 100%; border-radius: 0; margin: 0; border: none; box-shadow: none; }
     
-    /* Menu Mengambang untuk Mode Gelap */
-    body.dark-theme .tabs {
-        background: rgba(24, 24, 27, 0.85) !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
-        box-shadow: 0 10px 40px rgba(0,0,0,0.6) !important;
-    }
+    /* Ruang Aman Bawah (Anti Tertutup Menu Mengambang) */
+    main { padding: 15px; padding-bottom: 140px !important; }
 
-    /* Efek gelembung pada ikon yang sedang aktif */
-    .tab { border-radius: 16px; padding: 10px 5px !important; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+    /* 2. Menu Navigasi Bawah (Floating Bottom Navigation) */
+    .tabs {
+        position: fixed !important; bottom: 20px !important; left: 50% !important; transform: translateX(-50%) !important;
+        width: 92% !important; border-radius: 24px !important;
+        background: rgba(255, 255, 255, 0.85) !important; backdrop-filter: blur(24px) !important; -webkit-backdrop-filter: blur(24px) !important;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.15) !important; border: 1px solid rgba(255, 255, 255, 0.6) !important;
+        padding: 8px 5px !important; padding-bottom: env(safe-area-inset-bottom, 8px) !important; z-index: 9000 !important;
+        justify-content: space-around;
+    }
+    body.dark-theme .tabs { background: rgba(24, 24, 27, 0.85) !important; border: 1px solid rgba(255, 255, 255, 0.1) !important; }
+    .tab { flex-direction: column; font-size: 11px; padding: 10px 5px !important; gap: 4px; border-bottom: none !important; border-radius: 16px; }
+    .tab i { font-size: 22px; }
     .tab.active { background: rgba(0, 0, 0, 0.05); transform: translateY(-3px); }
     body.dark-theme .tab.active { background: rgba(255, 255, 255, 0.1); }
-    
-    /* Memberi jarak bawah ekstra agar konten tidak tertutup menu yang mengambang */
-    main { padding-bottom: 120px !important; }
-}
 
-/* =========================================================
-   UX UPGRADE: NATIVE APP FEEL (STANDAR IOS/ANDROID)
-   ========================================================= */
-
-/* 1. ANTI-HIGHLIGHT: Mencegah teks tersorot saat diklik cepat */
-.btn, .tab, .stat-card, .qr-card, .att-toggles, .masthead, .insight-card {
-    -webkit-touch-callout: none;
-    -webkit-user-select: none;
-    user-select: none;
-    -webkit-tap-highlight-color: transparent;
-}
-
-/* 2. FLOATING BOTTOM NAVIGATION (Hanya Menu Bawah yang melayang) */
-@media (max-width: 768px) {
-    .tabs {
-        position: fixed !important;
-        bottom: 20px !important; 
-        left: 50% !important;
-        transform: translateX(-50%) !important;
-        width: 92% !important;
-        border-radius: 24px !important;
-        background: rgba(255, 255, 255, 0.85) !important;
-        backdrop-filter: blur(24px) !important;
-        -webkit-backdrop-filter: blur(24px) !important;
-        box-shadow: 0 10px 40px rgba(0,0,0,0.15) !important;
-        border: 1px solid rgba(255, 255, 255, 0.6) !important;
-        padding: 8px 5px !important;
-        padding-bottom: env(safe-area-inset-bottom, 8px) !important;
-        z-index: 9000 !important;
-    }
-    
-    body.dark-theme .tabs {
-        background: rgba(24, 24, 27, 0.85) !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
-        box-shadow: 0 10px 40px rgba(0,0,0,0.6) !important;
-    }
-
-    .tab { border-radius: 16px; padding: 10px 5px !important; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
-    .tab.active { background: rgba(0, 0, 0, 0.05); transform: translateY(-3px); }
-    body.dark-theme .tab.active { background: rgba(255, 255, 255, 0.1); }
-    
-    /* 3. STICKY HEADER PROFESSIONAL (Penuh kiri-kanan, Kaca Buram) */
+    /* 3. Sticky Header Proporsional (Kiri-Kanan) */
     .masthead {
-        position: sticky !important;
-        top: 0 !important;
-        width: 100% !important;
-        box-sizing: border-box !important; /* Cegah header melebar keluar layar */
-        border-radius: 0 !important;
-        border: none !important;
-        border-bottom: 1px solid rgba(0,0,0,0.08) !important;
-        background: rgba(252, 252, 252, 0.85) !important;
-        backdrop-filter: blur(24px) !important;
-        -webkit-backdrop-filter: blur(24px) !important;
-        padding: 12px 16px !important;
-        
-        /* PAKSA SUSUNAN KIRI-KANAN (Membatalkan kode lama) */
-        display: flex !important;
-        flex-direction: row !important; 
-        align-items: center !important;
-        justify-content: space-between !important;
-        z-index: 8000 !important;
+        position: sticky !important; top: 0 !important; width: 100% !important;
+        border-radius: 0 !important; padding: 12px 16px !important;
+        display: flex !important; flex-direction: row !important; align-items: center !important; justify-content: space-between !important;
     }
-    
-    body.dark-theme .masthead {
-        background: rgba(9, 9, 11, 0.85) !important;
-        border-bottom: 1px solid rgba(255,255,255,0.08) !important;
-    }
-    
-    /* PERBAIKAN: Paksa Logo & Judul menyamping, jangan menumpuk atas-bawah */
-    .masthead > div:first-child { 
-        display: flex !important;
-        flex-direction: row !important; 
-        align-items: center !important; 
-        text-align: left !important;
-        gap: 12px !important;
-    }
-    
-    /* Merapikan Ukuran Logo & Teks */
+    .masthead > div:first-child { display: flex !important; flex-direction: row !important; align-items: center !important; gap: 12px !important; }
+    .masthead > div:last-child { display: flex !important; flex-direction: row !important; gap: 8px !important; margin-left: auto !important; width: auto !important; }
     .stamp-badge { width: 40px !important; height: 40px !important; padding: 6px !important; border-radius: 10px !important; margin: 0 !important; }
-    .masthead h1 { font-size: 17px !important; margin: 0 !important; letter-spacing: -0.5px !important; display: flex !important; align-items: center !important; }
+    .masthead h1 { font-size: 17px !important; margin: 0 !important; }
     .badge-ultimate { font-size: 9px !important; padding: 3px 6px !important; margin-left: 6px !important; }
-    .subtitle { display: none !important; } /* Sembunyikan slogan di HP agar luas */
-    
-    /* PERBAIKAN: Rapikan tombol (Refresh & Bulan) di ujung kanan */
-    .masthead > div:last-child {
-        display: flex !important;
-        flex-direction: row !important;
-        align-items: center !important;
-        justify-content: flex-end !important;
-        gap: 8px !important;
-        margin-left: auto !important;
-        width: auto !important;
-    }
+    .subtitle { display: none !important; } 
     .masthead .btn { padding: 8px !important; border-radius: 50% !important; margin: 0 !important; }
-    
-    body.dark-theme .masthead {
-        background: rgba(9, 9, 11, 0.85) !important;
-        border-bottom: 1px solid rgba(255,255,255,0.08) !important;
-    }
-    
-    /* Merapikan Isi Header */
-    .stamp-badge { width: 45px !important; height: 45px !important; padding: 8px !important; border-radius: 12px !important; }
-    .masthead h1 { font-size: 18px !important; margin: 0 !important; letter-spacing: -0.5px !important;}
-    .badge-ultimate { font-size: 10px !important; padding: 3px 8px !important; margin-left: 6px !important; }
-    .subtitle { display: none !important; } /* Hilangkan slogan agar tidak kepanjangan di HP */
-    
-    /* 4. RUANG AMAN KONTEN (Anti Tertutup) */
-    main { 
-        padding-top: 15px !important; 
-        padding-bottom: 130px !important; /* Ruang aman ekstra di bawah agar konten tidak tertutup menu melayang */
-    }
-    
     .network-status.show { top: 75px !important; }
+
+    /* 4. Form, Tombol & Card Menyesuaikan HP */
+    .form-row { padding: 15px; flex-direction: column; align-items: stretch; gap: 12px; }
+    .form-row .field { width: 100%; min-width: unset; }
+    .header-actions { flex-direction: column; width: 100%; }
+    .header-actions .btn { width: 100%; justify-content: center; }
+    .stats-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px; }
+    .stat-card:nth-child(1) { grid-column: 1 / -1; } /* Kotak pertama penuh kiri-kanan */
+    .stat-card h3 { font-size: 24px; }
+    
+    /* 5. Paksa Tabel Bisa Digeser Bebas ke Samping */
+    #siswa-table-wrap, #attendance-table-wrap, #belum-table-wrap {
+        display: block !important; width: 100% !important; max-width: calc(100vw - 30px);
+        overflow-x: auto !important; -webkit-overflow-scrolling: touch;
+    }
+    
+    /* 6. Layout Scanner & Grid ID Card 1 Kolom */
+    .scan-layout { display: flex; flex-direction: column; width: 100%; }
+    .scanner-box { aspect-ratio: 4/3; }
+    .cards-grid { grid-template-columns: 1fr !important; } /* ID Card Berjejer ke bawah */
 }
 
 /* =========================================================
-   PERBAIKAN LOGO LOGIN SCREEN (PROPORTIONAL & MEWAH)
+   PERBAIKAN LOGO LAYAR LOGIN
    ========================================================= */
-
-/* Mengunci ukuran logo di layar login agar tetap besar dan di tengah */
 #login-screen .stamp-badge {
-    width: 85px !important;
-    height: 85px !important;
-    margin: 0 auto 24px auto !important; /* Memaksa posisi ke tengah */
-    padding: 12px !important;
-    border-radius: 20px !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
+    width: 85px !important; height: 85px !important;
+    margin: 0 auto 24px auto !important; padding: 12px !important;
+    border-radius: 20px !important; display: flex !important;
+    align-items: center !important; justify-content: center !important;
+}
+#login-screen .app-logo { width: 100% !important; height: 100% !important; object-fit: contain !important; }
+
+/* =========================================================
+   PERBAIKAN CETAK KERTAS (PRINT A4 SANGAT RAPI)
+   ========================================================= */
+@media print {
+    @page { size: A4; margin: 0.5cm; }
+    .masthead, .tabs, .panel-header, #tab-siswa, #tab-absensi, 
+    .header-actions, #toast, #loading-overlay, #pin-modal, #network-status, .insight-card, .form-row { display: none !important; }
+    body, #app, main { background: transparent !important; padding: 0 !important; margin: 0 !important; box-shadow: none !important; border: none !important; width: 100% !important; }
+    
+    #tab-kartu { display: block !important; opacity: 1 !important; visibility: visible !important; }
+    
+    /* PAKSA 3 KOLOM HANYA SAAT DI-PRINT */
+    .cards-grid { display: grid !important; grid-template-columns: repeat(3, 1fr) !important; gap: 15px !important; width: 100% !important; }
+    
+    .id-card-pvc { border: 1px dashed #94a3b8 !important; box-shadow: none !important; break-inside: avoid; margin: 0 auto; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .id-header { background: #000 !important; color: #fff !important; }
+    .id-body { background: #fff !important; }
 }
 
-#login-screen .app-logo {
-    width: 100% !important;
-    height: 100% !important;
-    object-fit: contain !important; /* Mencegah gambar gepeng / melar */
+/* =========================================================
+   LAYAR LOADING (MEMPROSES DATA) & MODAL POP-UP
+   ========================================================= */
+.loading-overlay {
+    display: none; 
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(255, 255, 255, 0.85); 
+    z-index: 9999; 
+    align-items: center; justify-content: center; flex-direction: column;
+    backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
 }
+.loading-overlay.active { display: flex; }
 
-/* Membatasi aturan sebelumnya HANYA untuk Header, jangan ganggu Login */
-@media (max-width: 768px) {
-    .masthead .stamp-badge { 
-        width: 40px !important; 
-        height: 40px !important; 
-        padding: 6px !important; 
-        border-radius: 10px !important; 
-        margin: 0 !important; 
-    }
+/* Menyesuaikan warna loading saat Dark Mode (Mode Gelap) */
+body.dark-theme .loading-overlay { background: rgba(9, 9, 11, 0.85); color: #ededed; }
+
+/* Animasi Putaran (Spinner) */
+.spinner {
+    border: 4px solid var(--border); 
+    border-left-color: var(--primary);
+    border-radius: 50%; width: 40px; height: 40px; 
+    animation: spin 1s linear infinite; margin-bottom: 15px;
+}
+@keyframes spin { 100% { transform: rotate(360deg); } }
+
+/* Modal / Pop-up PIN (Jika digunakan) */
+.modal {
+    display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.6); z-index: 9999; 
+    align-items: center; justify-content: center;
+    backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+}
+.modal.active { display: flex; animation: fadeIn 0.3s ease; }
+.modal-content { 
+    background: var(--bg-card); padding: 30px; border-radius: 16px; 
+    width: 90%; max-width: 400px; text-align: center; 
+    box-shadow: var(--shadow-lg); border: 1px solid var(--border); 
+}
+.modal-content h3 { font-size: 20px; font-weight: 700; margin-bottom: 10px; color: var(--text-main); }
+.modal-content p { color: var(--text-muted); font-size: 14px; }
+.modal-actions { display: flex; gap: 10px; margin-top: 20px; justify-content: center; }
+
+@keyframes fadeIn { 
+    from { opacity: 0; transform: scale(0.95); } 
+    to { opacity: 1; transform: scale(1); } 
 }
