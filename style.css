@@ -954,3 +954,72 @@ body.dark-theme .skeleton::after {
     /* Memberi jarak bawah ekstra agar konten tidak tertutup menu yang mengambang */
     main { padding-bottom: 120px !important; }
 }
+
+/* =========================================================
+   UX UPGRADE 2.0: FLOATING HEADER & ANTI-TERTUTUP
+   ========================================================= */
+
+@media (max-width: 768px) {
+    /* 1. MEMBERI RUANG KOSONG AGAR KONTEN TIDAK TERTUTUP MENU */
+    main {
+        padding-top: 100px !important;    /* Mendorong konten turun agar tidak tertabrak Header melayang */
+        padding-bottom: 140px !important; /* Mendorong konten naik agar tidak tertutup Menu Bawah */
+    }
+
+    /* 2. MENYULAP HEADER (ATAS) MENJADI FLOATING PILL */
+    .masthead {
+        position: fixed !important;
+        top: 15px !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        width: 92% !important;
+        border-radius: 24px !important;
+        background: rgba(255, 255, 255, 0.85) !important;
+        backdrop-filter: blur(24px) !important;
+        -webkit-backdrop-filter: blur(24px) !important;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.15) !important;
+        border: 1px solid rgba(255, 255, 255, 0.6) !important;
+        z-index: 8000 !important;
+        
+        /* Merapikan posisi dari atas-bawah menjadi kiri-kanan (Kompak) */
+        padding: 10px 16px !important;
+        flex-direction: row !important;
+        text-align: left !important;
+        justify-content: space-between !important;
+        gap: 10px !important;
+    }
+
+    /* Floating Header khusus Mode Gelap */
+    body.dark-theme .masthead {
+        background: rgba(24, 24, 27, 0.85) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.6) !important;
+    }
+
+    /* 3. MERAPIKAN ISI HEADER AGAR MUAT DI DALAM "PIL" MELAYANG */
+    .masthead > div:first-child { 
+        flex-direction: row !important; 
+        align-items: center !important; 
+        gap: 12px !important;
+    }
+    
+    /* Mengecilkan Logo Sedikit */
+    .stamp-badge { width: 42px !important; height: 42px !important; padding: 6px !important; border-radius: 12px !important; }
+    
+    /* Mengecilkan Teks Judul & Sembunyikan Subtitle agar tidak sesak */
+    .masthead h1 { font-size: 16px !important; margin: 0 !important; }
+    .badge-ultimate { font-size: 9px !important; padding: 3px 6px !important; margin-left: 4px !important; }
+    .subtitle { display: none !important; } 
+    
+    /* Merapikan Tombol Sinkronisasi & Mode Gelap di Kanan */
+    .masthead > div:last-child { 
+        margin-left: auto !important; 
+        width: auto !important; 
+        gap: 6px !important;
+    }
+    .masthead .btn { padding: 8px !important; border-radius: 50% !important; }
+    .masthead .btn i { font-size: 18px !important; }
+
+    /* 4. MENURUNKAN INDIKATOR JARINGAN (ONLINE/OFFLINE) AGAR TIDAK NUMPUK */
+    .network-status.show { top: 90px !important; }
+}
