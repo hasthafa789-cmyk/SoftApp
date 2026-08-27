@@ -1668,3 +1668,68 @@ window.showToast = function(title, icon = 'success') {
     hapticClick(icon === 'error' ? 'heavy' : 'light');
     originalShowToast(title, icon);
 }
+
+// ==========================================
+// FITUR BARU: KEMBALI KE LOGIN (LOGOUT)
+// ==========================================
+document.getElementById('btn-logout')?.addEventListener('click', () => {
+    Swal.fire({
+        title: 'Keluar Aplikasi?',
+        text: "Anda akan kembali ke layar otorisasi (Login).",
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444', // Warna merah bahaya
+        cancelButtonColor: '#737373',
+        confirmButtonText: 'Ya, Keluar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // 1. Reset Status Role
+            currentRole = null;
+            
+            // 2. Kosongkan Kolom PIN
+            const pinInput = document.getElementById('login-pin');
+            if (pinInput) pinInput.value = '';
+            
+            // 3. Tampilkan Ulang Semua Tab (Jika sebelumnya disembunyikan oleh mode Guru/Siswa)
+            const tabSiswa = document.querySelector('[data-tab="siswa"]');
+            const tabKartu = document.querySelector('[data-tab="kartu"]');
+            const tabAnekdot = document.querySelector('[data-tab="anekdot"]');
+            
+            if (tabSiswa) tabSiswa.style.display = '';
+            if (tabKartu) tabKartu.style.display = '';
+            if (tabAnekdot) tabAnekdot.style.display = '';
+            
+            // 4. Pulihkan Fitur yang Terkunci oleh Kiosk Mode (Mesin Absen Siswa)
+            const tglInput = document.getElementById('input-tanggal-absensi');
+            const jamInput = document.getElementById('input-batas-jam');
+            if (tglInput) tglInput.disabled = false;
+            if (jamInput) jamInput.disabled = false;
+            
+            const headerActions = document.querySelector('#tab-absensi .header-actions');
+            if (headerActions) headerActions.style.display = '';
+            
+            const manualEntry = document.querySelector('.manual-entry');
+            if (manualEntry) manualEntry.style.display = '';
+            
+            // 5. Matikan Kamera jika sedang hidup
+            if (typeof stopKamera === 'function') stopKamera();
+            
+            // 6. Munculkan Layar Login dengan Animasi Lembut (Fade-In)
+            const loginScreen = document.getElementById('login-screen');
+            if (loginScreen) {
+                loginScreen.style.display = 'flex';
+                // Memberi jeda 10ms agar transisi CSS berjalan mulus
+                setTimeout(() => {
+                    loginScreen.style.opacity = '1';
+                }, 10);
+            }
+            
+            // 7. Kembalikan halaman aktif ke Tab Siswa (Default)
+            if (tabSiswa) tabSiswa.click();
+            
+            // 8. Berikan Getaran dan Pesan Sukses
+            if (typeof hapticClick === 'function') hapticClick('heavy');
+            if (typeof showToast === 'function') showToast('Anda telah keluar.', 'success');
+        }
+    });
+});
