@@ -143,7 +143,7 @@ document.getElementById('btn-login')?.addEventListener('click', () => {
 });
 
 // MASUKKAN URL GOOGLE APPS SCRIPT ANDA DI SINI
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxAlZX02z4rt8NECFNQ06wNtEpOt0VB1VvjdIfu-MAwoCURBNMLjnApDSJZuGSaZ0bgPA/exec';
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz709h95ZSk2qH_B3cZmPmyg7Re0DShin3PmHckRWH_xUrFqTewW8PUn1rDRiRBjeDKxw/exec';
 
 // ==========================================
 // SWEETALERT2 & UTILS PENDUKUNG
@@ -538,6 +538,9 @@ function keluarFullscreen() {
     if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen();
 }
 
+// Tambahkan variabel gembok ini persis di ATAS fungsi tick
+let isScanPaused = false;
+
 function tick() {
     if (!videoStream || video.readyState !== video.HAVE_ENOUGH_DATA) {
         scanInterval = requestAnimationFrame(tick);
@@ -551,26 +554,39 @@ function tick() {
         
         const imageData = canvas.getImageData(0, 0, canvasElement.width, canvasElement.height);
         const code = jsQR(imageData.data, imageData.width, imageData.height, {
-            inversionAttempts: "dontInvert",
+            inversionAttempts: "dontInvert", // Meringankan beban prosesor
         });
 
-        if (code) {
-            const nis = code.data;
+        // 1. SOLUSI ANTI-SPAM (Mencegah salah baca saat tidak ada QR)
+        // Kamera hanya akan memproses jika ada teks minimal 2 huruf, dan kamera tidak sedang digembok
+        if (code && code.data.trim().length > 2 && !isScanPaused) {
+            const nis = code.data.trim();
             const now = Date.now();
             
-            // HIGH-SPEED ALGORITHM
+            // Mencegah QR yang sama terpindai berulang kali dalam 3 detik
             if (nis === lastScannedNIS && (now - lastScanTime) < 3000) {
-                // Abaikan jika QR yang sama ditahan di depan kamera (Anti-Spam 3 detik)
+                // Abaikan
             } else {
+                isScanPaused = true; // 🔒 KUNCI KAMERA SEKARANG
                 lastScannedNIS = nis;
                 lastScanTime = now;
+                
                 catatAbsen(nis, 'Hadir'); 
+                
+                // 🔓 BUKA KUNCI KAMERA setelah 1.5 detik
+                setTimeout(() => {
+                    isScanPaused = false;
+                }, 1500);
             }
         }
     }
-    scanInterval = requestAnimationFrame(tick);
+    
+    // 2. SOLUSI ANTI-LAG: Turunkan Frame Rate Kamera
+    // Bukannya 60 frame per detik, sekarang kamera hanya mengambil gambar tiap 200 milidetik (~5 FPS)
+    setTimeout(() => {
+        scanInterval = requestAnimationFrame(tick);
+    }, 200);
 }
-
 document.getElementById('btn-manual-simpan')?.addEventListener('click', () => {
     const nis = selectSiswaManual?.value; const status = document.getElementById('manual-select-status')?.value;
     if (!nis) return showToast('Pilih siswa terlebih dahulu!', 'warning');
