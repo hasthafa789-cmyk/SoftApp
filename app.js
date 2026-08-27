@@ -538,54 +538,54 @@ function keluarFullscreen() {
     if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen();
 }
 
-// Tambahkan variabel gembok ini persis di ATAS fungsi tick
+// Taruh variabel gembok ini TEPAT DI ATAS fungsi tick()
 let isScanPaused = false;
 
 function tick() {
+    // 1. Putar animasi sekencang mungkin (Max FPS)
+    scanInterval = requestAnimationFrame(tick);
+    
     if (!videoStream || video.readyState !== video.HAVE_ENOUGH_DATA) {
-        scanInterval = requestAnimationFrame(tick);
         return;
     }
     
-    if (canvasElement) {
+    // 2. Jika tidak sedang digembok, scan secepat kilat!
+    if (canvasElement && !isScanPaused) {
         canvasElement.height = video.videoHeight;
         canvasElement.width = video.videoWidth;
         canvas.drawImage(video, 0, 0, canvasElement.width, canvasElement.height);
         
         const imageData = canvas.getImageData(0, 0, canvasElement.width, canvasElement.height);
+        
+        // LEPAS REM: Kita buat kameranya "Agresif" mencari QR di kondisi gelap maupun terang
         const code = jsQR(imageData.data, imageData.width, imageData.height, {
-            inversionAttempts: "dontInvert", // Meringankan beban prosesor
+            inversionAttempts: "attemptBoth", 
         });
 
-        // 1. SOLUSI ANTI-SPAM (Mencegah salah baca saat tidak ada QR)
-        // Kamera hanya akan memproses jika ada teks minimal 2 huruf, dan kamera tidak sedang digembok
-        if (code && code.data.trim().length > 2 && !isScanPaused) {
+        // 3. Begitu QR tertangkap kamera
+        if (code && code.data.trim() !== "") {
             const nis = code.data.trim();
             const now = Date.now();
             
-            // Mencegah QR yang sama terpindai berulang kali dalam 3 detik
+            // Abaikan jika QR yang sama ditahan di kamera
             if (nis === lastScannedNIS && (now - lastScanTime) < 3000) {
-                // Abaikan
-            } else {
-                isScanPaused = true; // 🔒 KUNCI KAMERA SEKARANG
-                lastScannedNIS = nis;
-                lastScanTime = now;
-                
-                catatAbsen(nis, 'Hadir'); 
-                
-                // 🔓 BUKA KUNCI KAMERA setelah 1.5 detik
-                setTimeout(() => {
-                    isScanPaused = false;
-                }, 1500);
+                return; 
             }
+            
+            // 🔒 LANGSUNG KUNCI KAMERA! (Agar HP istirahat saat mengirim data absen)
+            isScanPaused = true;
+            lastScannedNIS = nis;
+            lastScanTime = now;
+            
+            // Eksekusi Absen
+            catatAbsen(nis, 'Hadir'); 
+            
+            // 🔓 Buka kunci kamera 1.5 detik kemudian untuk siswa berikutnya
+            setTimeout(() => {
+                isScanPaused = false;
+            }, 1500);
         }
     }
-    
-    // 2. SOLUSI ANTI-LAG: Turunkan Frame Rate Kamera
-    // Bukannya 60 frame per detik, sekarang kamera hanya mengambil gambar tiap 200 milidetik (~5 FPS)
-    setTimeout(() => {
-        scanInterval = requestAnimationFrame(tick);
-    }, 200);
 }
 document.getElementById('btn-manual-simpan')?.addEventListener('click', () => {
     const nis = selectSiswaManual?.value; const status = document.getElementById('manual-select-status')?.value;
@@ -608,37 +608,53 @@ async function catatAbsen(nis, status, isManual = false) {
     const tgl = dateInput?.value || new Date().toISOString().split('T')[0];
     if (!isManual && dataAbsen[tgl]) {
         const riwayat = dataAbsen[tgl].find(a => a.nis === nis);
-        if (riwayat && (riwayat.status === 'Hadir' || riwayat.status === 'Terlambat')) { playBeep(true); showToast(`${siswa.nama} sudah absen!`, 'info'); return; }
+        if (riwayat && (riwayat.status === 'Hadir' || riwayat.status === 'Terlambat')) { 
+            playBeep(true); showToast(`${siswa.nama} sudah absen!`, 'info'); 
+            return; 
+        }
     }
 
-    // Gunakan format standar Internasional (HH:mm) agar valid di semua HP
     const waktuSekarang = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
     const batasJam = document.getElementById('input-batas-jam')?.value || '07:15';
     
-    // KECERDASAN BUATAN: Auto-Deteksi Terlambat
     let finalStatus = status;
     if (status === 'Hadir' && waktuSekarang > batasJam) {
         finalStatus = 'Terlambat';
     }
 
-    // KUNCI PERBAIKAN: Gunakan 'await' agar data masuk satu per satu (Antrean)
-    let formData = new URLSearchParams({ aksi: 'absen', tanggal: tgl, waktu: waktuSekarang, nis: siswa.nis, nama: siswa.nama, kelas: siswa.kelas, status: finalStatus });
-    await fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: formData }).catch(e => console.log('Sinkronisasi terputus'));
-
-    if (!dataAbsen[tgl]) dataAbsen[tgl] = []; dataAbsen[tgl] = dataAbsen[tgl].filter(a => a.nis !== nis);
+    // ===============================================================
+    // 🚀 1. UI INSTAN: Masukkan data ke HP dan Munculkan Layar Langsung
+    // ===============================================================
+    if (!dataAbsen[tgl]) dataAbsen[tgl] = []; 
+    dataAbsen[tgl] = dataAbsen[tgl].filter(a => a.nis !== nis);
     dataAbsen[tgl].push({ nis: siswa.nis, nama: siswa.nama, kelas: siswa.kelas, waktu: waktuSekarang, status: finalStatus });
     
-    renderAbsensi(); if(selectSiswaManual) selectSiswaManual.value = '';
+    renderAbsensi(); // Update tabel secara real-time
+    if(selectSiswaManual) selectSiswaManual.value = '';
+
     if (!isManual) { 
         playBeep(false); 
         showToast(`${siswa.nama} ditandai: ${finalStatus}`, finalStatus === 'Terlambat' ? 'warning' : 'success'); 
         
-        // Pemicu Kilat Hijau / Kuning
+        // Pemicu Kilat Hijau / Kuning Langsung Meledak!
         const flash = document.getElementById('scanner-flash');
         if(flash) { 
             flash.className = finalStatus === 'Terlambat' ? 'warning' : 'success'; 
             setTimeout(() => flash.className = '', 250); 
         }
+    }
+
+    // ===============================================================
+    // 🌐 2. BACKGROUND SYNC: Kirim ke Google diam-diam tanpa disuruh menunggu
+    // ===============================================================
+    let formData = new URLSearchParams({ aksi: 'absen', tanggal: tgl, waktu: waktuSekarang, nis: siswa.nis, nama: siswa.nama, kelas: siswa.kelas, status: finalStatus });
+    
+    // Jangan gunakan 'await' untuk scan kamera, biarkan jalan di latar belakang
+    const prosesKirim = fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: formData }).catch(e => console.log('Sinkronisasi terputus'));
+
+    // Khusus jika melakukan "Aksi Massal" di tabel belum absen, kita suruh tunggu agar server Google tidak error
+    if (isManual) {
+        await prosesKirim;
     }
 }
 
